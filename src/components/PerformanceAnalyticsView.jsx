@@ -33,7 +33,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
 
   const [timeframe, setTimeframe] = useState('1y');
   const [selections, setSelections] = useState([
-    { id: 'init-0', type: 'preset', strategy: '', currency: '', profile: '', assetIsin: '' }
+    { id: 'init-0', type: 'preset', strategy: 'World Allocation', currency: 'USD', profile: 'Risk Averse (20/80)', assetTicker: '' }
   ]);
 
   // --- Drag & Highlight State ---
@@ -42,15 +42,14 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   const [isSelecting, setIsSelecting] = useState(false);
   const [customStats, setCustomStats] = useState(null);
 
-  // Clear sub-selections cleanly when timeframe shifts without abusing useMemo
   useEffect(() => {
     clearSelection();
   }, [timeframe]);
 
   const addSelection = () => {
     if (selections.length >= 4) return;
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    setSelections([...selections, { id: uniqueId, type: 'preset', strategy: '', currency: '', profile: '', assetIsin: '' }]);
+    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    setSelections([...selections, { id: uniqueId, type: 'preset', strategy: '', currency: '', profile: '', assetTicker: '' }]);
   };
 
   const removeSelection = (id) => {
@@ -62,10 +61,10 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         if (s.id !== id) return s;
         const updated = { ...s, [field]: value };
         if (field === 'type') {
-            updated.strategy = ''; updated.profile = ''; updated.assetIsin = '';
+            updated.strategy = ''; updated.profile = ''; updated.assetTicker = '';
         }
         if (field === 'strategy' || field === 'currency') updated.profile = '';
-        if (field === 'currency' && updated.type === 'asset') updated.assetIsin = '';
+        if (field === 'currency' && updated.type === 'asset') updated.assetTicker = '';
         return updated;
     }));
   };
@@ -78,14 +77,17 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         if (!sel.strategy || !sel.currency || !sel.profile || !presets[sel.strategy]?.[sel.currency]?.[sel.profile]) return null;
         portfolio = presets[sel.strategy][sel.currency][sel.profile];
     } else {
-        if (!sel.currency || !sel.assetIsin) return null;
-        portfolio = [{ isin: sel.assetIsin, target: 100 }];
+        if (!sel.currency || !sel.assetTicker) return null;
+        portfolio = [{ ticker: sel.assetTicker, target: 100 }];
     }
 
     const { source, points } = timeframeConfig;
     
+    // Direct Ticker Lookup 
     const parsedHistories = portfolio.map(asset => {
-        const hString = historicalData[asset.isin]?.[source];
+        const targetTicker = asset.ticker || asset.isin; // Fallback structural safety check
+        const hString = historicalData[targetTicker]?.[source];
+        
         if (!hString || hString === "N/A") return [];
         return hString.split(';').map(v => parseFloat(v) || 0);
     });
@@ -107,7 +109,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         const history = parsedHistories[i];
         if (!history || history.length === 0) return;
         const startIndex = Math.max(0, history.length - finalPointsCount);
-        initialTotal += (history[startIndex] * (asset.target / 100));
+        initialTotal += (history[startIndex] * ((asset.target || asset.weight || 100) / 100));
     });
 
     if (initialTotal === 0) return null;
@@ -122,7 +124,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
             const historyIndex = history.length - finalPointsCount + p;
             
             if (historyIndex >= 0 && historyIndex < history.length) {
-                currentTotal += (history[historyIndex] * (asset.target / 100));
+                currentTotal += (history[historyIndex] * ((asset.target || asset.weight || 100) / 100));
                 hasData = true;
             }
         });
@@ -142,7 +144,11 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   const chartData = useMemo(() => {
     const config = TIMEFRAMES[timeframe];
     const seriesResults = selections.map(sel => calculateSeries(sel, config));
-    const actualPointsRendered = seriesResults.reduce((max, s) => (s && s.length > max ? s.length : max), 0) || config.points;
+    
+    const validSeriesLengths = seriesResults.filter(s => s !== null).map(s => s.length);
+    const actualPointsRendered = validSeriesLengths.length > 0 
+      ? Math.max(...validSeriesLengths) 
+      : config.points;
 
     const labels = [];
     const now = new Date();
@@ -170,14 +176,14 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     for (let i = 0; i < actualPointsRendered; i++) {
         const point = { name: labels[i] };
         selections.forEach((sel, idx) => {
-            const dataPoint = seriesResults[idx] ? seriesResults[idx][i] : null;
+            const dataPoint = seriesResults[idx] && seriesResults[idx][i] ? seriesResults[idx][i] : null;
             point[`series_${idx}`] = dataPoint ? dataPoint.growth : null;
             point[`raw_${idx}`] = dataPoint ? dataPoint.raw : null;
         });
         data.push(point);
     }
     return data;
-  }, [selections, timeframe, presets, historicalData, TIMEFRAMES]);
+  }, [selections, timeframe, presets, historicalData, pricesData, TIMEFRAMES]);
 
   // --- Chart Drag Handlers ---
   const handleMouseDown = (e) => {
@@ -214,8 +220,8 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         
         if (startRaw && endRaw) {
            const percentChange = ((endRaw - startRaw) / startRaw) * 100;
-           const assetName = sel.currency && pricesData[sel.currency]
-             ? (Object.values(pricesData[sel.currency]).find(a => a.isin === sel.assetIsin)?.name || 'Asset')
+           const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][sel.assetTicker]
+             ? pricesData[sel.currency][sel.assetTicker].name
              : 'Asset';
 
            return {
@@ -227,36 +233,28 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         return null;
       }).filter(Boolean);
 
-      setCustomStats({ 
-          start: chartData[startIndex].name, 
-          end: chartData[endIndex].name, 
-          stats 
-      });
+      setCustomStats({ start: chartData[startIndex].name, end: chartData[endIndex].name, stats });
     } else {
-      setRefAreaLeft(null);
-      setRefAreaRight(null);
-      setCustomStats(null);
+      setRefAreaLeft(null); setRefAreaRight(null); setCustomStats(null);
     }
   };
 
   const clearSelection = () => {
-      setRefAreaLeft(null);
-      setRefAreaRight(null);
-      setCustomStats(null);
+      setRefAreaLeft(null); setRefAreaRight(null); setCustomStats(null);
   };
 
   const finalStats = useMemo(() => {
     if (chartData.length === 0) return [];
     const lastData = chartData[chartData.length - 1];
     return selections.map((sel, idx) => {
-      const assetName = sel.currency && pricesData[sel.currency]
-        ? (Object.values(pricesData[sel.currency]).find(a => a.isin === sel.assetIsin)?.name || 'Asset')
+      const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][sel.assetTicker]
+        ? pricesData[sel.currency][sel.assetTicker].name
         : 'Asset';
 
       return {
          id: sel.id,
          name: sel.type === 'preset' ? (sel.profile || 'Preset') : assetName,
-         return: lastData[`series_${idx}`]
+         return: lastData ? lastData[`series_${idx}`] : 0
       };
     });
   }, [chartData, selections, pricesData]);
@@ -265,21 +263,24 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   const isChartPopulated = chartData.some(d => Object.keys(d).some(k => k.startsWith('series_') && d[k] !== null));
 
   return (
-    <div className="w-full space-y-4 animate-in fade-in duration-200">
-      {/* Compact Header Area tailored for Tab Placement */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-brand3 font-bold text-xs bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-            <MousePointer2 size={13} className="text-slate-400" /> 
-            Drag on chart to slice timeframe
-          </span>
-          {/* Subdued Inline Timeframe Picker */}
+    <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
+      {/* Header Panel */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
+        <div>
+          <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">GSB Analytics</h3>
+          <p className="text-slate-500 text-xs font-medium mt-0.5 flex items-center gap-2">
+              Compare strategic portfolio variance models. 
+              <span className="text-brand3 font-bold flex items-center gap-1"><MousePointer2 size={12}/> Drag chart canvas to cross-slice return frames.</span>
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
           <div className="inline-flex p-0.5 bg-slate-100 rounded-xl">
             {Object.entries(TIMEFRAMES).map(([key, opt]) => (
               <button
                 key={key}
                 onClick={() => setTimeframe(key)}
-                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition-all ${
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   timeframe === key ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -287,24 +288,24 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
               </button>
             ))}
           </div>
+
+          <button 
+            onClick={addSelection}
+            disabled={selections.length >= 4}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-40 transition-all shadow-xs"
+          >
+            <Plus size={14}/> Compare ({selections.length}/4)
+          </button>
         </div>
-        
-        <button 
-          onClick={addSelection}
-          disabled={selections.length >= 4}
-          className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-40 transition-all shadow-xs"
-        >
-          <Plus size={14}/> Compare ({selections.length}/4)
-        </button>
       </div>
 
-      {/* Inputs Configuration Drawer */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      {/* Grid Inputs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {selections.map((sel, idx) => (
-          <div key={sel.id} className="p-3.5 rounded-2xl border border-slate-100 bg-white shadow-xs relative flex flex-col justify-between min-h-[100px]">
+          <div key={sel.id} className="p-3.5 rounded-2xl border border-slate-100 bg-white shadow-xs relative flex flex-col justify-between min-h-[110px]">
             <div className="flex items-center justify-between mb-2">
                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx] }}></div>
+                  <div className="w-2.5 h-2.5 rounded-full shadow-xs" style={{ backgroundColor: COLORS[idx] }}></div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Series {idx + 1}</span>
                </div>
                {selections.length > 1 && (
@@ -317,7 +318,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
             <div className="space-y-1.5">
                 <div className="flex gap-1.5">
                     <select
-                        className="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                        className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
                         value={sel.type}
                         onChange={(e) => updateSelection(sel.id, 'type', e.target.value)}
                     >
@@ -325,11 +326,11 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                         <option value="asset">Individual Asset</option>
                     </select>
                     <select
-                        className="w-20 px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                        className="w-20 px-1.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
                         value={sel.currency}
                         onChange={(e) => updateSelection(sel.id, 'currency', e.target.value)}
                     >
-                        <option value="">Currency</option>
+                        <option value="">Curr</option>
                         <option value="USD">USD</option>
                         <option value="GBP">GBP</option>
                         <option value="EUR">EUR</option>
@@ -340,15 +341,15 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                 {sel.type === 'preset' ? (
                     <div className="flex gap-1.5">
                         <select
-                            className="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                            className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
                             value={sel.strategy}
                             onChange={(e) => updateSelection(sel.id, 'strategy', e.target.value)}
                         >
-                            <option value="">Strategy...</option>
+                            <option value="">Select Strategy</option>
                             {Object.keys(presets).map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                         <select
-                            className="flex-1 px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
+                            className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
                             disabled={!sel.strategy || !sel.currency}
                             value={sel.profile}
                             onChange={(e) => updateSelection(sel.id, 'profile', e.target.value)}
@@ -361,15 +362,15 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                     </div>
                 ) : (
                     <select
-                        className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
+                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
                         disabled={!sel.currency}
-                        value={sel.assetIsin}
-                        onChange={(e) => updateSelection(sel.id, 'assetIsin', e.target.value)}
+                        value={sel.assetTicker}
+                        onChange={(e) => updateSelection(sel.id, 'assetTicker', e.target.value)}
                     >
-                        <option value="">Select Asset...</option>
+                        <option value="">Select Ticker...</option>
                         {sel.currency && pricesData[sel.currency] && 
-                            Object.values(pricesData[sel.currency]).map(a => (
-                                <option key={a.isin} value={a.isin}>{a.name}</option>
+                            Object.keys(pricesData[sel.currency]).map(ticker => (
+                                <option key={ticker} value={ticker}>{ticker} - {pricesData[sel.currency][ticker].name}</option>
                             ))
                         }
                     </select>
@@ -379,24 +380,24 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         ))}
       </div>
 
-      {/* Primary Canvas Container */}
-      <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm relative transition-all">
+      {/* Chart Block */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs relative">
         {isChartPopulated ? (
           <div className="space-y-4">
-            {/* Contextual Stats Dashboard strip */}
+            {/* Custom/Total Stats Strip */}
             <div className={`flex flex-wrap items-center gap-4 border-b pb-4 transition-all ${customStats ? 'border-amber-100 bg-amber-50/40 -mx-5 px-5 -mt-5 pt-5 rounded-t-2xl' : 'border-slate-100'}`}>
                <div className="w-full flex justify-between items-center">
                    <p className={`text-[10px] font-bold uppercase tracking-wider ${customStats ? 'text-amber-700' : 'text-slate-400'}`}>
-                      {customStats ? `Custom Return Frame: ${customStats.start} → ${customStats.end}` : `Period performance Overview (${TIMEFRAMES[timeframe].label})`}
+                      {customStats ? `Custom Return Frame: ${customStats.start} → ${customStats.end}` : `Total Performance Return Overview (${TIMEFRAMES[timeframe].label})`}
                    </p>
                    {customStats && (
-                       <button onClick={clearSelection} className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white border shadow-xs px-2 py-0.5 rounded-md transition-colors">
+                       <button onClick={clearSelection} className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white border shadow-2xs px-2 py-0.5 rounded-md transition-colors">
                            ✕ Clear Delta
                        </button>
                    )}
                </div>
 
-               {displayStats.map((stat, idx) => stat.return !== undefined && stat.return !== null && (
+               {displayStats.map((stat, idx) => stat && stat.return !== undefined && stat.return !== null && (
                  <div key={stat.id} className={`flex-1 min-w-[100px] ${idx > 0 ? 'border-l border-slate-100 pl-4' : ''}`}>
                     <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tight flex items-center gap-1.5 truncate">
                         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[idx] }}></span>
@@ -409,7 +410,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                ))}
             </div>
 
-            <div className="h-[360px] w-full select-none cursor-crosshair">
+            <div className="h-[380px] w-full select-none cursor-crosshair">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart 
                     data={chartData} 
@@ -422,7 +423,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                   <defs>
                     {selections.map((sel, idx) => (
                         <linearGradient key={`grad_${idx}`} id={`color_${idx}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={COLORS[idx]} stopOpacity={0.15}/>
+                            <stop offset="5%" stopColor={COLORS[idx]} stopOpacity={0.12}/>
                             <stop offset="95%" stopColor={COLORS[idx]} stopOpacity={0}/>
                         </linearGradient>
                     ))}
@@ -435,14 +436,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                     tickLine={false}
                     tick={{ fill: '#94a3b8', fontSize: 10 }}
                     dy={10}
-                    interval={
-                        timeframe === '5y' ? 11 : 
-                        timeframe === '3y' ? 25 : 
-                        timeframe === '1y' ? 21 : 
-                        timeframe === '6m' ? 10 : 
-                        timeframe === '3m' ? 5  : 
-                        Math.max(1, Math.floor(chartData.length / 10))
-                    }
+                    interval={Math.max(1, Math.floor(chartData.length / 7))}
                   />
                   <YAxis 
                     axisLine={false}
@@ -486,9 +480,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                   
                   {selections.map((sel, idx) => {
                      const identityKey = `series_${idx}`;
-                     // Safeguard check to verify if data field is actually available before plotting
-                     const hasData = chartData.some(d => d[identityKey] !== null);
-                     if (!hasData) return null;
+                     if (!chartData.some(d => d[identityKey] !== null)) return null;
 
                      return (
                        <Area 
@@ -499,29 +491,23 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                           fill={`url(#color_${idx})`} 
                           strokeWidth={idx === 0 ? 2.5 : 2}
                           strokeDasharray={idx > 0 ? "4 4" : "0"}
-                          animationDuration={400}
+                          animationDuration={350}
                        />
                      );
                   })}
 
                   {refAreaLeft && refAreaRight && (
-                    <ReferenceArea 
-                        x1={refAreaLeft} 
-                        x2={refAreaRight} 
-                        strokeOpacity={0.3} 
-                        fill="#0f172a" 
-                        fillOpacity={0.07} 
-                    />
+                    <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="#0f172a" fillOpacity={0.07} />
                   )}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
         ) : (
-          <div className="h-[300px] flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-             <TrendingUp size={32} className="text-slate-300 mb-2" />
-             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">No Asset Data Selected</p>
-             <p className="text-[11px] text-slate-400 mt-1">Configure asset metrics above to view active charts.</p>
+          <div className="h-[320px] flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+             <TrendingUp size={32} className="text-slate-300 mb-2 animate-pulse" />
+             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Loading Historical Asset Matrix</p>
+             <p className="text-[11px] text-slate-400 mt-1 text-center max-w-xs">Verifying sheet ticker sequences. Confirm selections above match loaded currencies.</p>
           </div>
         )}
       </div>

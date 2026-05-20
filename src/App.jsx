@@ -114,6 +114,7 @@ useEffect(() => {
                         presets={INITIAL_PRESETS} 
                         historicalData={historicalData} 
                         symbol={symbol} 
+                        Missing pricesData={pricesData}
                     />
                 )}
                 {activeTab === 'tax' && (
