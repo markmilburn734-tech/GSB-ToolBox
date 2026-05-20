@@ -52,7 +52,7 @@ useEffect(() => {
                                 <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center text-white">
                                     <GSB size={20} color="white" />
                                 </div>
-                                PortfolioSuite
+                                GSB Toolbox
                             </div>
                             <div className="flex h-full gap-4">
                                 <TabButton active={activeTab === 'rebalancer'} onClick={() => setActiveTab('rebalancer')} icon={<RefreshCw size={16}/>} label="Rebalance" />

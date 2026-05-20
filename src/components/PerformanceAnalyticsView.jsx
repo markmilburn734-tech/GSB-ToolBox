@@ -15,7 +15,7 @@ const COLORS = ['#f43f5e', '#3b82f6', '#f59e0b', '#10b981']; // Rose, Blue, Ambe
 
 export default function PerformanceAnalyticsView({ presets, historicalData, pricesData = {}, symbol = "$" }) {
   
-// Calculate dynamic YTD trading days (roughly 252 trading days per 365 calendar days)
+  // Calculate dynamic YTD trading days (roughly 252 trading days per 365 calendar days)
   const getYTDDays = () => {
       const now = new Date();
       const start = new Date(now.getFullYear(), 0, 1);
@@ -28,8 +28,8 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
     '6m':  { label: '6M',  source: 'Daily_1Y',   points: 126 }, // ~126 trading days
     'ytd': { label: 'YTD', source: 'Daily_1Y',   points: getYTDDays() },
     '1y':  { label: '1Y',  source: 'Daily_1Y',   points: 252 }, // ~252 trading days
-    '3y':  { label: '3Y',  source: 'Weekly_3Y',  points: 156 },
-    '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 60 }
+    '3y':  { label: '3Y',  source: 'Weekly_3Y',  points: 156 }, // ~156 weekly data points
+    '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 60 }   // 60 monthly data points
   };
 
   const [timeframe, setTimeframe] = useState('1y');
@@ -89,26 +89,36 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
 
     if (parsedHistories.every(h => h.length === 0)) return null;
 
-    const alignedData = new Array(points).fill(null);
+    // Safety check: Find the shortest history tracking length across selections to prevent clipping array out-of-bounds
+    let maxAvailablePoints = points;
+    parsedHistories.forEach(h => {
+       if (h.length > 0 && h.length < maxAvailablePoints) {
+          maxAvailablePoints = h.length;
+       }
+    });
+
+    const finalPointsCount = Math.max(1, maxAvailablePoints);
+    const alignedData = new Array(finalPointsCount).fill(null);
     let initialTotal = 0;
     
     portfolio.forEach((asset, i) => {
         const history = parsedHistories[i];
         if (!history || history.length === 0) return;
-        const startIndex = Math.max(0, history.length - points);
+        // Make sure indexing doesn't head south past zero if history array size is small
+        const startIndex = Math.max(0, history.length - finalPointsCount);
         initialTotal += (history[startIndex] * (asset.target / 100));
     });
 
     if (initialTotal === 0) return null;
 
-    for (let p = 0; p < points; p++) {
+    for (let p = 0; p < finalPointsCount; p++) {
         let currentTotal = 0;
         let hasData = false;
 
         portfolio.forEach((asset, i) => {
             const history = parsedHistories[i];
             if (!history || history.length === 0) return;
-            const historyIndex = history.length - points + p;
+            const historyIndex = history.length - finalPointsCount + p;
             
             if (historyIndex >= 0 && historyIndex < history.length) {
                 currentTotal += (history[historyIndex] * (asset.target / 100));
@@ -118,7 +128,6 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
 
         if (hasData) {
             const pctGrowth = ((currentTotal - initialTotal) / initialTotal) * 100;
-            // Store BOTH growth (for chart Y axis) and raw total (for custom area math)
             alignedData[p] = {
                 growth: parseFloat(pctGrowth.toFixed(2)),
                 raw: currentTotal
@@ -136,24 +145,25 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
     const config = TIMEFRAMES[timeframe];
     const seriesResults = selections.map(sel => calculateSeries(sel, config));
     
+    // Dynamically lock chart bounds to data payload lengths
+    const actualPointsRendered = seriesResults.reduce((max, s) => (s && s.length > max ? s.length : max), 0) || config.points;
+
     const labels = [];
     const now = new Date();
     const isWeekly = config.source.includes('Weekly');
     const isDaily = config.source.includes('Daily');
     
-    for (let i = 0; i < config.points; i++) {
+    for (let i = 0; i < actualPointsRendered; i++) {
         const d = new Date(now);
         if (isDaily) {
-            // Multiply by (365/252) to map trading days accurately back across the calendar
-            d.setDate(d.getDate() - Math.floor((config.points - 1 - i) * (365/252)));
+            d.setDate(d.getDate() - Math.floor((actualPointsRendered - 1 - i) * (365/252)));
         } else if (isWeekly) {
-            d.setDate(d.getDate() - (config.points - 1 - i) * 7);
+            d.setDate(d.getDate() - (actualPointsRendered - 1 - i) * 7);
         } else {
-            d.setMonth(d.getMonth() - (config.points - 1 - i));
+            d.setMonth(d.getMonth() - (actualPointsRendered - 1 - i));
         }
         
-        // Show "Day Month" for shorter timeframes, and "Month Year" for longer ones
-        if (isDaily && config.points <= 126) {
+        if (isDaily && actualPointsRendered <= 126) {
             labels.push(d.toLocaleString('default', { month: 'short', day: 'numeric' }));
         } else {
             labels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
@@ -161,7 +171,7 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
     }
 
     const data = [];
-    for (let i = 0; i < config.points; i++) {
+    for (let i = 0; i < actualPointsRendered; i++) {
         const point = { name: labels[i] };
         selections.forEach((sel, idx) => {
             const dataPoint = seriesResults[idx] ? seriesResults[idx][i] : null;
@@ -193,7 +203,6 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
     setIsSelecting(false);
     
     if (refAreaLeft && refAreaRight && refAreaLeft !== refAreaRight) {
-      // Find indices to ensure chronological order
       let startIndex = chartData.findIndex(d => d.name === refAreaLeft);
       let endIndex = chartData.findIndex(d => d.name === refAreaRight);
       
@@ -203,16 +212,20 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
         setRefAreaRight(chartData[endIndex].name);
       }
 
-      // Calculate point-to-point math for the isolated timeframe
       const stats = selections.map((sel, idx) => {
         const startRaw = chartData[startIndex]?.[`raw_${idx}`];
         const endRaw = chartData[endIndex]?.[`raw_${idx}`];
         
         if (startRaw && endRaw) {
            const percentChange = ((endRaw - startRaw) / startRaw) * 100;
+           // Adjusted lookup structure to properly locate names within currency submaps using Object.values
+           const assetName = sel.currency && pricesData[sel.currency]
+             ? (Object.values(pricesData[sel.currency]).find(a => a.isin === sel.assetIsin)?.name || 'Asset')
+             : 'Asset';
+
            return {
               id: sel.id,
-              name: sel.type === 'preset' ? (sel.profile || 'Preset') : (Object.values(pricesData[sel.currency] || {}).find(a => a.isin === sel.assetIsin)?.name || 'Asset'),
+              name: sel.type === 'preset' ? (sel.profile || 'Preset') : assetName,
               return: percentChange
            };
         }
@@ -225,7 +238,6 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
           stats 
       });
     } else {
-      // Clicked without dragging (clear selection)
       setRefAreaLeft(null);
       setRefAreaRight(null);
       setCustomStats(null);
@@ -242,14 +254,19 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
   const finalStats = useMemo(() => {
     if (chartData.length === 0) return [];
     const lastData = chartData[chartData.length - 1];
-    return selections.map((sel, idx) => ({
-       id: sel.id,
-       name: sel.type === 'preset' ? (sel.profile || 'Preset') : (Object.values(pricesData[sel.currency] || {}).find(a => a.isin === sel.assetIsin)?.name || 'Asset'),
-       return: lastData[`series_${idx}`]
-    }));
+    return selections.map((sel, idx) => {
+      const assetName = sel.currency && pricesData[sel.currency]
+        ? (Object.values(pricesData[sel.currency]).find(a => a.isin === sel.assetIsin)?.name || 'Asset')
+        : 'Asset';
+
+      return {
+         id: sel.id,
+         name: sel.type === 'preset' ? (sel.profile || 'Preset') : assetName,
+         return: lastData[`series_${idx}`]
+      };
+    });
   }, [chartData, selections, pricesData]);
 
-  // Determine which stats to show (Custom window OR entire timeframe)
   const displayStats = customStats ? customStats.stats : finalStats;
 
   return (
@@ -364,7 +381,7 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
               key={key}
               onClick={() => {
                   setTimeframe(key);
-                  clearSelection(); // Clear drag selection when timeframe changes
+                  clearSelection();
               }}
               className={`px-5 py-2 text-xs font-black rounded-xl transition-all ${
                 timeframe === key
@@ -380,7 +397,7 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
 
       {/* Chart Canvas */}
       <div className="bg-white p-6 md:p-10 rounded-[2.5rem] border border-slate-200 shadow-sm relative transition-all">
-        {chartData.length > 0 ? (
+        {chartData.length > 0 && chartData[0]?.name ? (
           <div className="space-y-8">
             {/* Stat Row */}
             <div className={`flex flex-wrap items-center gap-8 border-b pb-6 transition-all ${customStats ? 'border-brand/20 bg-brand/5 -mx-6 md:-mx-10 px-6 md:px-10 -mt-6 pt-6 rounded-t-[2.5rem]' : 'border-slate-100'}`}>
@@ -416,7 +433,7 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp} // Prevent getting stuck if mouse leaves chart bounds
+                    onMouseLeave={handleMouseUp}
                 >
                   <defs>
                     {selections.map((sel, idx) => (
@@ -437,10 +454,10 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
                     interval={
                         timeframe === '5y' ? 11 : 
                         timeframe === '3y' ? 25 : 
-                        timeframe === '1y' ? 21 : // roughly 1 tick per month (21 trading days)
-                        timeframe === '6m' ? 10 : // roughly 1 tick every 2 weeks
-                        timeframe === '3m' ? 5  : // roughly 1 tick per week
-                        Math.max(1, Math.floor(TIMEFRAMES.ytd.points / 10))
+                        timeframe === '1y' ? 21 : 
+                        timeframe === '6m' ? 10 : 
+                        timeframe === '3m' ? 5  : 
+                        Math.max(1, Math.floor(chartData.length / 10))
                     }
                   />
                   <YAxis 
@@ -453,7 +470,6 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
                   <Tooltip 
                     cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
                     content={({ active, payload }) => {
-                      // Don't show standard tooltip while actively dragging a selection box
                       if (active && payload && payload.length && !isSelecting) {
                         return (
                           <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-2xl border border-slate-800 min-w-[200px] pointer-events-none">
@@ -495,7 +511,6 @@ export default function PerformanceAnalyticsView({ presets, historicalData, pric
                      />
                   ))}
 
-                  {/* Render the shaded selection box */}
                   {refAreaLeft && refAreaRight && (
                     <ReferenceArea 
                         x1={refAreaLeft} 
