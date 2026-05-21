@@ -5,8 +5,7 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
+  Tooltip,
   ReferenceArea
 } from 'recharts';
 import { TrendingUp, Plus, X, MousePointer2 } from 'lucide-react';
@@ -32,11 +31,12 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   }), []);
 
   const [timeframe, setTimeframe] = useState('1y');
+  
+  // Set default initial state values defensively matching your preset fields
   const [selections, setSelections] = useState([
     { id: 'init-0', type: 'preset', strategy: 'World Allocation', currency: 'USD', profile: 'Risk Averse (20/80)', assetTicker: '' }
   ]);
 
-  // --- Drag & Highlight State ---
   const [refAreaLeft, setRefAreaLeft] = useState(null);
   const [refAreaRight, setRefAreaRight] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
@@ -74,7 +74,9 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     let portfolio = [];
     
     if (sel.type === 'preset') {
-        if (!sel.strategy || !sel.currency || !sel.profile || !presets[sel.strategy]?.[sel.currency]?.[sel.profile]) return null;
+        if (!sel.strategy || !sel.currency || !sel.profile || !presets[sel.strategy]?.[sel.currency]?.[sel.profile]) {
+            return null;
+        }
         portfolio = presets[sel.strategy][sel.currency][sel.profile];
     } else {
         if (!sel.currency || !sel.assetTicker) return null;
@@ -83,12 +85,14 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
 
     const { source, points } = timeframeConfig;
     
-    // Direct Ticker Lookup 
     const parsedHistories = portfolio.map(asset => {
-        const targetTicker = asset.ticker || asset.isin; // Fallback structural safety check
-        const hString = historicalData[targetTicker]?.[source];
+        const targetKey = asset.ticker || asset.isin; 
+        const hString = historicalData[targetKey]?.[source];
         
-        if (!hString || hString === "N/A") return [];
+        if (!hString || hString === "N/A") {
+            console.warn(`[GSB Tracker] No historical payload located for key: "${targetKey}" under timeline frame: "${source}"`);
+            return [];
+        }
         return hString.split(';').map(v => parseFloat(v) || 0);
     });
 
@@ -109,7 +113,8 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         const history = parsedHistories[i];
         if (!history || history.length === 0) return;
         const startIndex = Math.max(0, history.length - finalPointsCount);
-        initialTotal += (history[startIndex] * ((asset.target || asset.weight || 100) / 100));
+        const weight = asset.target || asset.weight || 100;
+        initialTotal += (history[startIndex] * (weight / 100));
     });
 
     if (initialTotal === 0) return null;
@@ -124,7 +129,8 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
             const historyIndex = history.length - finalPointsCount + p;
             
             if (historyIndex >= 0 && historyIndex < history.length) {
-                currentTotal += (history[historyIndex] * ((asset.target || asset.weight || 100) / 100));
+                const weight = asset.target || asset.weight || 100;
+                currentTotal += (history[historyIndex] * (weight / 100));
                 hasData = true;
             }
         });
@@ -182,6 +188,8 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         });
         data.push(point);
     }
+    
+    console.log("[GSB Tracker] Calculated Chart Points Matrix Payload:", data);
     return data;
   }, [selections, timeframe, presets, historicalData, pricesData, TIMEFRAMES]);
 
@@ -260,11 +268,15 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   }, [chartData, selections, pricesData]);
 
   const displayStats = customStats ? customStats.stats : finalStats;
-  const isChartPopulated = chartData.some(d => Object.keys(d).some(k => k.startsWith('series_') && d[k] !== null));
+  
+  // High fidelity truthy validation check to see if numeric growth is present
+  const isChartPopulated = useMemo(() => {
+    return chartData.some(d => Object.keys(d).some(k => k.startsWith('series_') && d[k] !== null && d[k] !== undefined));
+  }, [chartData]);
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
-      {/* Header Panel */}
+      {/* GSB Analytics Section Title Block Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
         <div>
           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">GSB Analytics</h3>
@@ -299,7 +311,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         </div>
       </div>
 
-      {/* Grid Inputs */}
+      {/* Input Rows Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {selections.map((sel, idx) => (
           <div key={sel.id} className="p-3.5 rounded-2xl border border-slate-100 bg-white shadow-xs relative flex flex-col justify-between min-h-[110px]">
@@ -380,11 +392,11 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         ))}
       </div>
 
-      {/* Chart Block */}
+      {/* Chart Canvas Wrap Block */}
       <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs relative">
         {isChartPopulated ? (
           <div className="space-y-4">
-            {/* Custom/Total Stats Strip */}
+            {/* Contextual Stats Bar */}
             <div className={`flex flex-wrap items-center gap-4 border-b pb-4 transition-all ${customStats ? 'border-amber-100 bg-amber-50/40 -mx-5 px-5 -mt-5 pt-5 rounded-t-2xl' : 'border-slate-100'}`}>
                <div className="w-full flex justify-between items-center">
                    <p className={`text-[10px] font-bold uppercase tracking-wider ${customStats ? 'text-amber-700' : 'text-slate-400'}`}>
@@ -410,104 +422,107 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                ))}
             </div>
 
-            <div className="h-[380px] w-full select-none cursor-crosshair">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart 
-                    data={chartData} 
-                    margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
-                >
-                  <defs>
-                    {selections.map((sel, idx) => (
-                        <linearGradient key={`grad_${idx}`} id={`color_${idx}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={COLORS[idx]} stopOpacity={0.12}/>
-                            <stop offset="95%" stopColor={COLORS[idx]} stopOpacity={0}/>
-                        </linearGradient>
-                    ))}
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
-                  
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                    dy={10}
-                    interval={Math.max(1, Math.floor(chartData.length / 7))}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: '#94a3b8', fontSize: 10 }}
-                    tickFormatter={(val) => `${val}%`}
-                  />
-                  
-                  {!isSelecting && (
-                    <Tooltip 
-                      cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-xl border border-slate-800 min-w-[180px] pointer-events-none text-xs">
-                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 border-b border-slate-800 pb-1.5">
-                                  {payload[0].payload.name}
-                              </p>
-                              <div className="space-y-2">
-                                  {payload.map((entry, idx) => (
-                                      <div key={idx} className="flex justify-between items-center gap-4">
-                                          <div className="flex items-center gap-1.5 min-w-0">
-                                              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }}></div>
-                                              <span className="text-slate-300 truncate max-w-[100px]">
-                                                  {finalStats[idx]?.name || `Series ${idx + 1}`}
-                                              </span>
-                                          </div>
-                                          <span className={`font-bold ${entry.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                              {entry.value}%
-                                          </span>
-                                      </div>
-                                  ))}
-                              </div>
+            {/* FIXED HEIGH WRAPPER CONTAINER: Replaces collapsing ResponsiveContainer width/height loops */}
+            <div style={{ width: '100%', height: '380px' }} className="select-none cursor-crosshair">
+              <AreaChart 
+                  width={1180} 
+                  height={380}
+                  data={chartData} 
+                  margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
+                  style={{ width: '100%', height: '100%' }}
+              >
+                <defs>
+                  {selections.map((sel, idx) => (
+                      <linearGradient key={`grad_${idx}`} id={`color_${idx}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={COLORS[idx]} stopOpacity={0.12}/>
+                          <stop offset="95%" stopColor={COLORS[idx]} stopOpacity={0}/>
+                      </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
+                
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                  dy={10}
+                  interval={Math.max(1, Math.floor(chartData.length / 7))}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: '#94a3b8', fontSize: 10 }}
+                  tickFormatter={(val) => `${val}%`}
+                />
+                
+                {!isSelecting && (
+                  <Tooltip 
+                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        return (
+                          <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-xl border border-slate-800 min-w-[180px] pointer-events-none text-xs">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 border-b border-slate-800 pb-1.5">
+                                {payload[0].payload.name}
+                            </p>
+                            <div className="space-y-2">
+                                {payload.map((entry, idx) => (
+                                    <div key={idx} className="flex justify-between items-center gap-4">
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }}></div>
+                                            <span className="text-slate-300 truncate max-w-[100px]">
+                                                {finalStats[idx]?.name || `Series ${idx + 1}`}
+                                            </span>
+                                        </div>
+                                        <span className={`font-bold ${entry.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {entry.value}%
+                                        </span>
+                                    </div>
+                                ))}
                             </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                  )}
-                  
-                  {selections.map((sel, idx) => {
-                     const identityKey = `series_${idx}`;
-                     if (!chartData.some(d => d[identityKey] !== null)) return null;
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                )}
+                
+                {selections.map((sel, idx) => {
+                   const identityKey = `series_${idx}`;
+                   return (
+                     <Area 
+                        key={sel.id}
+                        type="monotone" 
+                        dataKey={identityKey} 
+                        stroke={COLORS[idx]} 
+                        fill={`url(#color_${idx})`} 
+                        strokeWidth={idx === 0 ? 2.5 : 2}
+                        strokeDasharray={idx > 0 ? "4 4" : "0"}
+                        animationDuration={150}
+                        connectNulls={true}
+                     />
+                   );
+                })}
 
-                     return (
-                       <Area 
-                          key={sel.id}
-                          type="monotone" 
-                          dataKey={identityKey} 
-                          stroke={COLORS[idx]} 
-                          fill={`url(#color_${idx})`} 
-                          strokeWidth={idx === 0 ? 2.5 : 2}
-                          strokeDasharray={idx > 0 ? "4 4" : "0"}
-                          animationDuration={350}
-                       />
-                     );
-                  })}
-
-                  {refAreaLeft && refAreaRight && (
-                    <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="#0f172a" fillOpacity={0.07} />
-                  )}
-                </AreaChart>
-              </ResponsiveContainer>
+                {refAreaLeft && refAreaRight && (
+                  <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="#0f172a" fillOpacity={0.07} />
+                )}
+              </AreaChart>
             </div>
           </div>
         ) : (
           <div className="h-[320px] flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
              <TrendingUp size={32} className="text-slate-300 mb-2 animate-pulse" />
-             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Loading Historical Asset Matrix</p>
-             <p className="text-[11px] text-slate-400 mt-1 text-center max-w-xs">Verifying sheet ticker sequences. Confirm selections above match loaded currencies.</p>
+             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Awaiting Valid Series Alignment</p>
+             <p className="text-[11px] text-slate-400 mt-1 text-center max-w-md">
+                Open up your browser Console Developer tools to inspect streaming payload flags. Ensure your chosen strategy contains active history columns inside your source data sheets.
+             </p>
           </div>
         )}
       </div>
