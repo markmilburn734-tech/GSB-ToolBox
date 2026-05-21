@@ -16,16 +16,22 @@ const parseSheetPromise = (url) => {
                 if (!rawString) return rawString;
 
                 // Check if the file is mashed together without standard CSV commas/tabs
-                if (!rawString.includes(',') && !rawString.includes('\t') && rawString.includes('.L')) {
+                if (!rawString.includes(',') && !rawString.includes('\t')) {
                     console.log("[GSB Tracker] Mashed raw history format detected. Re-formatting grid layout...");
 
-                    // Matches: Ticker (e.g., 0P00000TCY.L), Date (MM/DD/YYYY), Price (digits with 4 decimals)
-                    const regex = /(0P[A-Z0-9]+\.L)(\d{1,2}\/\d{1,2}\/\d{4})(\d+\.\d{4})/g;
+                    // Matches: 
+                    // 1. Ticker: 0P followed by alphanumeric characters, optionally ending with an exchange suffix like .L
+                    // 2. Date: MM/DD/YYYY or M/D/YYYY
+                    // 3. Price: digits with 4 decimals
+                    const regex = /(0P[A-Z0-9]+(?:\.[A-Z])?)(\d{1,2}\/\d{1,2}\/\d{4})(\d+\.\d{4})/g;
                     let match;
                     const cleanRows = ['Ticker,Date,Price']; // Inject valid headers
 
                     while ((match = regex.exec(rawString)) !== null) {
-                        cleanRows.push(`${match[1]},${match[2]},${match[3]}`);
+                        // Normalize ticker by stripping out trailing exchange suffixes (e.g., '.L')
+                        // This guarantees perfect structural synchronization with frontend component state
+                        const normalizedTicker = match[1].split('.')[0];
+                        cleanRows.push(`${normalizedTicker},${match[2]},${match[3]}`);
                     }
 
                     return cleanRows.join('\n');
@@ -51,11 +57,12 @@ export const fetchPortfolioData = async (onComplete) => {
         const newPrices = {};
         const historyMap = {};
 
-        // 2. Process Stocks Sheet (Keyed directly off Tickers)
+        // 2. Process Stocks Sheet (Keyed directly off Base Tickers)
         stocksData.forEach(row => {
             if (!row.Currency || !row.Ticker) return;
             
-            const tickerKey = String(row.Ticker).trim();
+            // Strip suffixes like .L here as well to maintain uniformity
+            const tickerKey = String(row.Ticker).trim().split('.')[0];
 
             // Map Live Prices for Rebalancer & Market Explorer
             if (!newPrices[row.Currency]) newPrices[row.Currency] = {};
@@ -75,7 +82,7 @@ export const fetchPortfolioData = async (onComplete) => {
         dailyHistData.forEach(row => {
             if (!row.Ticker || row.Price === undefined || row.Price === null) return;
             
-            const tickerKey = String(row.Ticker).trim();
+            const tickerKey = String(row.Ticker).trim().split('.')[0];
             if (!dailyGroup[tickerKey]) dailyGroup[tickerKey] = [];
             dailyGroup[tickerKey].push(row);
         });
@@ -87,8 +94,6 @@ export const fetchPortfolioData = async (onComplete) => {
             const dailyPrices = dailyGroup[ticker].map(r => r.Price);
 
             if (!historyMap[ticker]) historyMap[ticker] = {};
-            
-            // Map directly to Ticker key instead of ISIN
             historyMap[ticker]['Daily_1Y'] = dailyPrices.join(';');
 
             // Generate Weekly_3Y dynamically by downsampling every 5th trading session
@@ -101,7 +106,7 @@ export const fetchPortfolioData = async (onComplete) => {
         monthlyHistData.forEach(row => {
             if (!row.Ticker || row.Price === undefined || row.Price === null) return;
             
-            const tickerKey = String(row.Ticker).trim();
+            const tickerKey = String(row.Ticker).trim().split('.')[0];
             if (!monthlyGroup[tickerKey]) monthlyGroup[tickerKey] = [];
             monthlyGroup[tickerKey].push(row);
         });
@@ -132,6 +137,6 @@ export const fetchPortfolioData = async (onComplete) => {
         onComplete({ newPrices, historyMap });
 
     } catch (error) {
-        console.error("Critical error syncronizing multi-sheet portfolio data:", error);
+        console.error("Critical error synchronizing multi-sheet portfolio data:", error);
     }
 };
