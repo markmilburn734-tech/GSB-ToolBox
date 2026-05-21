@@ -70,7 +70,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   };
 
   // --- Data Engine ---
-  const calculateSeries = (sel, timeframeConfig) => {
+const calculateSeries = (sel, timeframeConfig) => {
     let portfolio = [];
     
     if (sel.type === 'preset') {
@@ -86,11 +86,26 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     const { source, points } = timeframeConfig;
     
     const parsedHistories = portfolio.map(asset => {
-        const targetKey = asset.ticker || asset.isin; 
-        const hString = historicalData[targetKey]?.[source];
+        // Direct assignment from new constants file format
+        let targetTicker = (asset.ticker || asset.isin || "").trim();
+        
+        // Defensive Lookup: Case-insensitive match check across keys
+        let actualDataKey = Object.keys(historicalData).find(
+            key => key.toLowerCase() === targetTicker.toLowerCase()
+        );
+
+        // Fallback: If no match found, check if splitting off a suffix (.L, .F) fixes it
+        if (!actualDataKey && targetTicker.includes('.')) {
+            const baseTicker = targetTicker.split('.')[0];
+            actualDataKey = Object.keys(historicalData).find(
+                key => key.toLowerCase() === baseTicker.toLowerCase()
+            );
+        }
+
+        const hString = actualDataKey ? historicalData[actualDataKey]?.[source] : null;
         
         if (!hString || hString === "N/A") {
-            console.warn(`[GSB Tracker] No historical payload located for key: "${targetKey}" under timeline frame: "${source}"`);
+            console.warn(`[GSB Tracker] Could not find history data for identifier: "${targetTicker}" under source slice: "${source}"`);
             return [];
         }
         return hString.split(';').map(v => parseFloat(v) || 0);
@@ -146,7 +161,6 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
 
     return alignedData;
   };
-
   const chartData = useMemo(() => {
     const config = TIMEFRAMES[timeframe];
     const seriesResults = selections.map(sel => calculateSeries(sel, config));
