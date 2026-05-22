@@ -6,7 +6,8 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip,
-  ReferenceArea
+  ReferenceArea,
+  ResponsiveContainer
 } from 'recharts';
 import { TrendingUp, Plus, X, MousePointer2 } from 'lucide-react';
 
@@ -70,7 +71,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   };
 
   // --- Data Engine ---
-const calculateSeries = (sel, timeframeConfig) => {
+  const calculateSeries = (sel, timeframeConfig) => {
     let portfolio = [];
     
     if (sel.type === 'preset') {
@@ -83,18 +84,15 @@ const calculateSeries = (sel, timeframeConfig) => {
         portfolio = [{ ticker: sel.assetTicker, target: 100 }];
     }
 
-    const { source, points } = timeframeConfig;
+  const { source, points } = timeframeConfig;
     
     const parsedHistories = portfolio.map(asset => {
-        // Direct assignment from new constants file format
         let targetTicker = (asset.ticker || asset.isin || "").trim();
         
-        // Defensive Lookup: Case-insensitive match check across keys
         let actualDataKey = Object.keys(historicalData).find(
             key => key.toLowerCase() === targetTicker.toLowerCase()
         );
 
-        // Fallback: If no match found, check if splitting off a suffix (.L, .F) fixes it
         if (!actualDataKey && targetTicker.includes('.')) {
             const baseTicker = targetTicker.split('.')[0];
             actualDataKey = Object.keys(historicalData).find(
@@ -130,7 +128,7 @@ const calculateSeries = (sel, timeframeConfig) => {
         const startIndex = Math.max(0, history.length - finalPointsCount);
         const weight = asset.target || asset.weight || 100;
         initialTotal += (history[startIndex] * (weight / 100));
-    });
+  });
 
     if (initialTotal === 0) return null;
 
@@ -161,6 +159,7 @@ const calculateSeries = (sel, timeframeConfig) => {
 
     return alignedData;
   };
+
   const chartData = useMemo(() => {
     const config = TIMEFRAMES[timeframe];
     const seriesResults = selections.map(sel => calculateSeries(sel, config));
@@ -203,7 +202,6 @@ const calculateSeries = (sel, timeframeConfig) => {
         data.push(point);
     }
     
-    console.log("[GSB Tracker] Calculated Chart Points Matrix Payload:", data);
     return data;
   }, [selections, timeframe, presets, historicalData, pricesData, TIMEFRAMES]);
 
@@ -283,20 +281,21 @@ const calculateSeries = (sel, timeframeConfig) => {
 
   const displayStats = customStats ? customStats.stats : finalStats;
   
-  // High fidelity truthy validation check to see if numeric growth is present
   const isChartPopulated = useMemo(() => {
     return chartData.some(d => Object.keys(d).some(k => k.startsWith('series_') && d[k] !== null && d[k] !== undefined));
   }, [chartData]);
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
-      {/* GSB Analytics Section Title Block Header */}
+      {/* Header Block */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
         <div>
           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">GSB Analytics</h3>
           <p className="text-slate-500 text-xs font-medium mt-0.5 flex items-center gap-2">
               Compare strategic portfolio variance models. 
-              <span className="text-brand3 font-bold flex items-center gap-1"><MousePointer2 size={12}/> Drag chart canvas to cross-slice return frames.</span>
+              <span className="text-amber-600 font-bold flex items-center gap-1">
+                <MousePointer2 size={12}/> Drag chart canvas to cross-slice return frames.
+              </span>
           </p>
         </div>
         
@@ -436,98 +435,100 @@ const calculateSeries = (sel, timeframeConfig) => {
                ))}
             </div>
 
-            {/* FIXED HEIGH WRAPPER CONTAINER: Replaces collapsing ResponsiveContainer width/height loops */}
-            <div style={{ width: '100%', height: '380px' }} className="select-none cursor-crosshair">
-              <AreaChart 
-                  width={1180} 
-                  height={380}
-                  data={chartData} 
-                  margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  style={{ width: '100%', height: '100%' }}
-              >
-                <defs>
-                  {selections.map((sel, idx) => (
-                      <linearGradient key={`grad_${idx}`} id={`color_${idx}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={COLORS[idx]} stopOpacity={0.12}/>
-                          <stop offset="95%" stopColor={COLORS[idx]} stopOpacity={0}/>
-                      </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
-                
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  dy={10}
-                  interval={Math.max(1, Math.floor(chartData.length / 7))}
-                />
-                <YAxis 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#94a3b8', fontSize: 10 }}
-                  tickFormatter={(val) => `${val}%`}
-                />
-                
-                {!isSelecting && (
-                  <Tooltip 
-                    cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        return (
-                          <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-xl border border-slate-800 min-w-[180px] pointer-events-none text-xs">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 border-b border-slate-800 pb-1.5">
-                                {payload[0].payload.name}
-                            </p>
-                            <div className="space-y-2">
-                                {payload.map((entry, idx) => (
-                                    <div key={idx} className="flex justify-between items-center gap-4">
-                                        <div className="flex items-center gap-1.5 min-w-0">
-                                            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }}></div>
-                                            <span className="text-slate-300 truncate max-w-[100px]">
-                                                {finalStats[idx]?.name || `Series ${idx + 1}`}
-                                            </span>
-                                        </div>
-                                        <span className={`font-bold ${entry.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                            {entry.value}%
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
+            {/* RESPONSIVE CONTAINER WRAPPER: Fixed width collapse issues across modern viewports */}
+            <div className="w-full h-[380px] min-w-0 select-none cursor-crosshair">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart 
+                    data={chartData} 
+                    margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
+                    onMouseDown={handleMouseDown}
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={handleMouseUp}
+                >
+                  <defs>
+                    {selections.map((sel, idx) => (
+                        <linearGradient key={`grad_${idx}`} id={`color_${idx}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={COLORS[idx]} stopOpacity={0.12}/>
+                            <stop offset="95%" stopColor={COLORS[idx]} stopOpacity={0}/>
+                        </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
+                  
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    dy={10}
+                    interval={Math.max(1, Math.floor(chartData.length / 7))}
                   />
-                )}
-                
-                {selections.map((sel, idx) => {
-                   const identityKey = `series_${idx}`;
-                   return (
-                     <Area 
-                        key={sel.id}
-                        type="monotone" 
-                        dataKey={identityKey} 
-                        stroke={COLORS[idx]} 
-                        fill={`url(#color_${idx})`} 
-                        strokeWidth={idx === 0 ? 2.5 : 2}
-                        strokeDasharray={idx > 0 ? "4 4" : "0"}
-                        animationDuration={150}
-                        connectNulls={true}
-                     />
-                   );
-                })}
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                    tickFormatter={(val) => `${val}%`}
+                  />
+                  
+                  {!isSelecting && (
+                    <Tooltip 
+                      cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-xl border border-slate-800 min-w-[180px] pointer-events-none text-xs">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 border-b border-slate-800 pb-1.5">
+                                  {payload[0].payload.name}
+                              </p>
+                              <div className="space-y-2">
+                                  {payload.map((entry, idx) => {
+                                      if (!entry || entry.value === null || entry.value === undefined) return null;
+                                      return (
+                                          <div key={idx} className="flex justify-between items-center gap-4">
+                                              <div className="flex items-center gap-1.5 min-w-0">
+                                                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }}></div>
+                                                  <span className="text-slate-300 truncate max-w-[100px]">
+                                                      {finalStats[idx]?.name || `Series ${idx + 1}`}
+                                                  </span>
+                                              </div>
+                                              <span className={`font-bold ${entry.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                  {entry.value}%
+                                              </span>
+                                          </div>
+                                      );
+                                  })}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                  )}
+                  
+                  {selections.map((sel, idx) => {
+                     const identityKey = `series_${idx}`;
+                     return (
+                       <Area 
+                          key={sel.id}
+                          type="monotone" 
+                          dataKey={identityKey} 
+                          stroke={COLORS[idx]} 
+                          fill={`url(#color_${idx})`} 
+                          strokeWidth={idx === 0 ? 2.5 : 2}
+                          strokeDasharray={idx > 0 ? "4 4" : "0"}
+                          animationDuration={150}
+                          connectNulls={true}
+                       />
+                     );
+                  })}
 
-                {refAreaLeft && refAreaRight && (
-                  <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="#0f172a" fillOpacity={0.07} />
-                )}
-              </AreaChart>
+                  {refAreaLeft && refAreaRight && (
+                    <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="#0f172a" fillOpacity={0.07} />
+                  )}
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
         ) : (
