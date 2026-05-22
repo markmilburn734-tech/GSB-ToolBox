@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { TrendingUp, Plus, X, MousePointer2 } from 'lucide-react';
 
-const COLORS = ['#f43f5e', '#3b82f6', '#f59e0b', '#10b981']; // Rose, Blue, Amber, Emerald
+const COLORS = ['#f43f5e', '#3b82f6', '#f59e0b', '#10b981']; 
 
 export default function PerformanceAnalyticsView({ presets = {}, historicalData = {}, pricesData = {}, symbol = "$" }) {
   
@@ -32,8 +32,6 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   }), []);
 
   const [timeframe, setTimeframe] = useState('1y');
-  
-  // Clean initialization state matching expected drop fields
   const [selections, setSelections] = useState([
     { id: 'init-0', type: 'preset', strategy: 'World Allocation', currency: 'USD', profile: 'Risk Averse (20/80)', assetTicker: '' }
   ]);
@@ -70,7 +68,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     }));
   };
 
-  // --- Fixed Data Engine ---
+  // --- Strict Suffix Matching Data Engine ---
   const calculateSeries = (sel, timeframeConfig) => {
     let portfolio = [];
     
@@ -87,19 +85,21 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     const { source, points } = timeframeConfig;
     
     const parsedHistories = portfolio.map(asset => {
-        let rawTicker = (asset.ticker || asset.isin || "").trim();
-        
-        // CRITICAL FIX: Always split off suffix (.L) to match clean keys constructed by api.js
-        let targetTicker = rawTicker.split('.')[0];
-        
-        let actualDataKey = Object.keys(historicalData).find(
-            key => key.toLowerCase() === targetTicker.toLowerCase()
-        );
+        let rawTicker = (asset.ticker || "").trim().toUpperCase();
+        let rawIsin = (asset.isin || "").trim().toUpperCase();
+
+        if (rawTicker === "N/A" || (!rawTicker && !rawIsin)) return [];
+
+        // Exact uppercase key lookup (preserving full suffixes)
+        let actualDataKey = Object.keys(historicalData).find(key => {
+            const upperKey = key.trim().toUpperCase();
+            return upperKey === rawTicker || upperKey === rawIsin;
+        });
 
         const hString = actualDataKey ? historicalData[actualDataKey]?.[source] : null;
         
         if (!hString || hString === "N/A") {
-            console.warn(`[GSB Tracker] Missing historical data for: "${targetTicker}" ("${rawTicker}") under: "${source}"`);
+            console.warn(`[GSB Tracker] Missing historical data for: "${rawTicker || rawIsin}" under: "${source}"`);
             return [];
         }
         return hString.split(';').map(v => parseFloat(v) || 0);
@@ -201,7 +201,6 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     return data;
   }, [selections, timeframe, presets, historicalData, pricesData, TIMEFRAMES]);
 
-  // --- Chart Drag Handlers ---
   const handleMouseDown = (e) => {
     if (e?.activeLabel) {
       setRefAreaLeft(e.activeLabel);
@@ -236,11 +235,9 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         
         if (startRaw && endRaw) {
            const percentChange = ((endRaw - startRaw) / startRaw) * 100;
-           
-           // Handle asset labels cleanly if checking individual tickers
-           const baseTicker = sel.assetTicker ? sel.assetTicker.split('.')[0] : '';
-           const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][baseTicker]
-             ? pricesData[sel.currency][baseTicker].name
+           const targetKey = sel.assetTicker ? sel.assetTicker.trim().toUpperCase() : '';
+           const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][targetKey]
+             ? pricesData[sel.currency][targetKey].name
              : 'Asset';
 
            return {
@@ -266,9 +263,9 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     if (chartData.length === 0) return [];
     const lastData = chartData[chartData.length - 1];
     return selections.map((sel, idx) => {
-      const baseTicker = sel.assetTicker ? sel.assetTicker.split('.')[0] : '';
-      const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][baseTicker]
-        ? pricesData[sel.currency][baseTicker].name
+      const targetKey = sel.assetTicker ? sel.assetTicker.trim().toUpperCase() : '';
+      const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][targetKey]
+        ? pricesData[sel.currency][targetKey].name
         : 'Asset';
 
       return {
@@ -287,7 +284,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
-      {/* Header Banner */}
+      {/* Header Panel */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
         <div>
           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">GSB Analytics</h3>
@@ -324,7 +321,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         </div>
       </div>
 
-      {/* Input Target Configuration Row */}
+      {/* Grid Inputs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {selections.map((sel, idx) => (
           <div key={sel.id} className="p-3.5 rounded-2xl border border-slate-100 bg-white shadow-xs relative flex flex-col justify-between min-h-[110px]">
@@ -405,11 +402,10 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
         ))}
       </div>
 
-      {/* Chart Display Window */}
+      {/* Chart Block */}
       <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs relative">
         {isChartPopulated ? (
           <div className="space-y-4">
-            {/* Realtime Stats Bar */}
             <div className={`flex flex-wrap items-center gap-4 border-b pb-4 transition-all ${customStats ? 'border-amber-100 bg-amber-50/40 -mx-5 px-5 -mt-5 pt-5 rounded-t-2xl' : 'border-slate-100'}`}>
                <div className="w-full flex justify-between items-center">
                    <p className={`text-[10px] font-bold uppercase tracking-wider ${customStats ? 'text-amber-700' : 'text-slate-400'}`}>
@@ -435,7 +431,6 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                ))}
             </div>
 
-            {/* Fluid Multi-Viewport Layout Box Container */}
             <div className="w-full h-[380px] min-w-0 select-none cursor-crosshair">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart 
@@ -536,7 +531,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
              <TrendingUp size={32} className="text-slate-300 mb-2 animate-pulse" />
              <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Awaiting Valid Series Alignment</p>
              <p className="text-[11px] text-slate-400 mt-1 text-center max-w-md">
-                If selecting a strategy, confirm that its tickers match the parsed headers inside your historical mapping matrices.
+                Confirm your selected presets contain exact matching ticker codes as saved inside the history tables.
              </p>
           </div>
         )}
