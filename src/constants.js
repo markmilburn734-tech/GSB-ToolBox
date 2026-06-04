@@ -1125,13 +1125,6 @@ export const INITIAL_PRESETS = {
 }*/
 }
 
-export const BAKED_PRICES = {
-  // If this was meant to hold hardcoded default or fallback price objects, 
-  // ensure the structure matches what App.jsx uses:
-  "0P00016L38": 100.00,
-  "0P0000258M": 150.00
-};
-
    // 3. Currency Exchange Rates
 export const EXCHANGE_RATES = {
     "USD": { GBP: 0.74, EUR: 0.86, AUD: 1.40, AED: 3.6725 },

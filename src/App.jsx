@@ -12,7 +12,6 @@ import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check } from './compon
 // Constants Import
 import { 
     INITIAL_PRESETS, 
-    BAKED_PRICES, 
     CURRENCY_SYMBOLS, 
     GOOGLE_SHEETS_CSV_URL 
 } from './constants';
@@ -23,7 +22,7 @@ export default function App() {
     // 1. Core State Management
     const [activeTab, setActiveTab] = useState('rebalancer');
     const [activeCurrency, setActiveCurrency] = useState('USD');
-    const [pricesData, setPricesData] = useState(BAKED_PRICES);
+    const [pricesData, setPricesData] = useState({});
     const [isFetchingData, setIsFetchingData] = useState(false);
     const [historicalData, setHistoricalData] = useState({});
     
