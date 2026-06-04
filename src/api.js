@@ -31,7 +31,7 @@ export function fetchPortfolioData(onComplete) {
         parseSheetPromise(GOOGLE_SHEETS_CSV_URLS.STOCKS),
         parseSheetPromise(GOOGLE_SHEETS_CSV_URLS.DAILY_HIST),
         parseSheetPromise(GOOGLE_SHEETS_CSV_URLS.MONTHLY_HIST),
-        parseSheetPromise(GOOGLE_SHEETS_URLS.CURRENCIES) // Fixed fallback object mapping reference if needed
+        parseSheetPromise(GOOGLE_SHEETS_CSV_URLS.CURRENCIES) // Fixed fallback object mapping reference if needed
     ])
     .then(([stocksData, dailyHistData, monthlyHistData, currenciesData]) => {
         
