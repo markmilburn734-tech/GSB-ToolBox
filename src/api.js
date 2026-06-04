@@ -117,4 +117,35 @@ export function fetchPortfolioData(onComplete) {
     .catch(err => {
         console.error("[GSB Tracker] Fatal error loading remote configuration assets:", err);
     });
+
+// Inside your api.js where you parse the Daily History sheet
+Papa.parse(csvData, {
+  header: true,
+  skipEmptyLines: true,
+  complete: (results) => {
+    // 1. Check if we actually got rows
+    if (!results.data || results.data.length === 0) {
+      console.error("[GSB Tracker] Critical: Papa.parse returned an empty array!");
+      return;
+    }
+
+    // 2. Log the actual column headers found in your Google Sheet
+    const actualHeaders = Object.keys(results.data[0]);
+    console.log("[GSB Tracker] Detected CSV Headers:", actualHeaders);
+
+    results.data.forEach((row, index) => {
+      // 3. Match this logic to your exact header case
+      // If your sheet uses lowercase 'ticker', change row.Ticker to row.ticker
+      const tickerKey = row.Ticker || row.ticker || row['Ticker Code']; 
+      
+      if (tickerKey) {
+        const cleanedKey = tickerKey.trim().toUpperCase();
+        // ... rest of your historyMap grouping logic
+      } else if (index === 0) {
+        console.warn("[GSB Tracker] Could not find a ticker value in the first row. Row sample:", row);
+      }
+    });
+  }
+});
+
 }
