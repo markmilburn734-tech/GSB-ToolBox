@@ -11,7 +11,7 @@ import {
 } from 'recharts';
 import { TrendingUp, Plus, X, MousePointer2 } from 'lucide-react';
 
-const COLORS = ['#f43f5e', '#3b82f6', '#f59e0b', '#10b981']; 
+const COLORS = [ '#2d0738', '#9966ff', '#00a0f0', '#fc5b3f']; 
 
 export default function PerformanceAnalyticsView({ presets = {}, historicalData = {}, pricesData = {}, symbol = "$" }) {
   
