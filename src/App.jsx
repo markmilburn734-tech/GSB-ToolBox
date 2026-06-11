@@ -236,13 +236,13 @@ export default function App() {
                 {activeTab === 'analytics' && (
                     <PerformanceAnalyticsView
                         presets={INITIAL_PRESETS}
-                        historicalData={historyForCurrency}
+                        historicalData={historicalData} 
                         symbol={symbol}
-                        pricesData={pricesForCurrency}
-                        liveRates={liveRates}
+                        pricesData={pricesData}         
+                        liveRates={liveRates}           
+                        currency={activeCurrency}
                     />
                 )}
- 
                 {activeTab === 'tax' && (
                     <TaxCalculatorView symbol={symbol} />
                 )}
