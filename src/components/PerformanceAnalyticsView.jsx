@@ -9,7 +9,7 @@ import {
   ReferenceArea,
   ResponsiveContainer
 } from 'recharts';
-import { TrendingUp, Plus, X, MousePointer2 } from 'lucide-react';
+import { TrendingUp, Plus, X, MousePointer2, Shield, Percent, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 
 const COLORS = [ '#2d0738', '#9966ff', '#00a0f0', '#fc5b3f']; 
 
@@ -27,7 +27,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     '6m':  { label: '6M',  source: 'Daily_1Y',   points: 126 },
     'ytd': { label: 'YTD', source: 'Daily_1Y',   points: getYTDDays() },
     '1y':  { label: '1Y',  source: 'Daily_1Y',   points: 252 },
-    '3y':  { label: '3Y',  source: 'Daily_1Y',  points: 756 },
+    '3y':  { label: '3Y',  source: 'Daily_1Y',   points: 756 },
     '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 60 }
   }), []);
 
@@ -40,6 +40,9 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   const [refAreaRight, setRefAreaRight] = useState(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [customStats, setCustomStats] = useState(null);
+  
+  // Track open/closed state for the granular fund lists
+  const [expandedLedger, setExpandedLedger] = useState({});
 
   useEffect(() => {
     clearSelection();
@@ -68,7 +71,10 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     }));
   };
 
-  // --- Strict Suffix Matching Data Engine ---
+  const toggleLedger = (id) => {
+    setExpandedLedger(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const calculateSeries = (sel, timeframeConfig) => {
     let portfolio = [];
     
@@ -90,7 +96,6 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
 
         if (rawTicker === "N/A" || (!rawTicker && !rawIsin)) return [];
 
-        // Exact uppercase key lookup (preserving full suffixes)
         let actualDataKey = Object.keys(historicalData).find(key => {
             const upperKey = key.trim().toUpperCase();
             return upperKey === rawTicker || upperKey === rawIsin;
@@ -155,6 +160,78 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
 
     return alignedData;
   };
+
+  // --- Dynamic Fundamental Metrics Allocation Engine ---
+  const structuralMetrics = useMemo(() => {
+    return selections.map((sel) => {
+      let portfolio = [];
+      if (sel.type === 'preset') {
+        if (!sel.strategy || !sel.currency || !sel.profile || !presets[sel.strategy]?.[sel.currency]?.[sel.profile]) {
+          return null;
+        }
+        portfolio = presets[sel.strategy][sel.currency][sel.profile];
+      } else {
+        if (!sel.currency || !sel.assetTicker) return null;
+        portfolio = [{ ticker: sel.assetTicker, target: 100 }];
+      }
+
+      let totalWeight = 0;
+      let weightedTer = 0;
+      const volCounts = { 'High': 0, 'Above Average': 0, 'Average': 0, 'Below Average': 0, 'Low': 0 };
+      let dynamicName = 'Asset Strategy';
+      const holdingsDetails = [];
+
+      portfolio.forEach(asset => {
+        const targetKey = asset.ticker ? asset.ticker.trim().toUpperCase() : '';
+        const weight = asset.target || asset.weight || 100;
+        const assetMeta = sel.currency && pricesData[sel.currency]?.[targetKey];
+
+        // Access properties matching the structural mappings from api.js
+        const itemTer = assetMeta ? (assetMeta.ter || 0) : 0;
+        const itemVol = assetMeta ? (assetMeta.volatility || 'Average') : 'Average';
+        const itemName = assetMeta ? assetMeta.name : (asset.name || 'Unknown Asset');
+
+        totalWeight += weight;
+        weightedTer += itemTer * weight;
+        
+        if (volCounts[itemVol] !== undefined) {
+          volCounts[itemVol] += weight;
+        } else {
+          volCounts['Average'] += weight;
+        }
+
+        holdingsDetails.push({
+          ticker: targetKey || 'N/A',
+          name: itemName,
+          weight: weight,
+          ter: itemTer,
+          volatility: itemVol
+        });
+
+        if (sel.type === 'asset' && assetMeta) dynamicName = assetMeta.name;
+      });
+
+      if (totalWeight === 0) return null;
+
+      // Determine predominant volatility profile based on weights
+      let dominantVol = 'Average';
+      let maxVolWeight = -1;
+      Object.entries(volCounts).forEach(([key, val]) => {
+        if (val > maxVolWeight) {
+          maxVolWeight = val;
+          dominantVol = key;
+        }
+      });
+
+      return {
+        id: sel.id,
+        name: sel.type === 'preset' ? sel.profile : dynamicName,
+        ter: totalWeight > 0 ? (weightedTer / totalWeight) : 0,
+        volatility: dominantVol,
+        holdings: holdingsDetails
+      };
+    });
+  }, [selections, presets, pricesData]);
 
   const chartData = useMemo(() => {
     const config = TIMEFRAMES[timeframe];
@@ -281,6 +358,18 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
   const isChartPopulated = useMemo(() => {
     return chartData.some(d => Object.keys(d).some(k => k.startsWith('series_') && d[k] !== null && d[k] !== undefined));
   }, [chartData]);
+
+  // Unified color mapper for all volatility variations found in the sheets
+  const getVolBadgeStyles = (vol) => {
+    const cleanVol = String(vol).trim().toLowerCase();
+    if (['low', 'below average'].includes(cleanVol)) {
+      return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    }
+    if (['high', 'above average'].includes(cleanVol)) {
+      return 'bg-rose-50 text-rose-700 border-rose-100';
+    }
+    return 'bg-amber-50 text-amber-700 border-amber-100';
+  };
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
@@ -525,6 +614,97 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+
+            {/* --- STRATEGY METRICS & UNDERLYING HOLDINGS LEDGER --- */}
+            <div className="mt-6 border-t border-slate-100 pt-5 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Strategy Fundamentals Breakdown
+              </h4>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {structuralMetrics.map((metrics, idx) => {
+                  if (!metrics) return null;
+                  const isOpen = !!expandedLedger[metrics.id];
+
+                  return (
+                    <div 
+                      key={metrics.id} 
+                      className="rounded-xl border border-slate-100 bg-slate-50/30 overflow-hidden flex flex-col justify-between transition-all"
+                    >
+                      {/* Summary Header Card */}
+                      <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-4">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Series {idx + 1}</span>
+                          </div>
+                          <h5 className="text-xs font-bold text-slate-800 truncate" title={metrics.name}>
+                            {metrics.name}
+                          </h5>
+                        </div>
+
+                        <div className="flex items-center gap-4 shrink-0">
+                          <div className="text-right">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-0.5 justify-end">
+                              <Percent size={10} /> Blended TER
+                            </span>
+                            <p className="text-xs font-bold text-slate-900">{metrics.ter.toFixed(2)}%</p>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight flex items-center gap-0.5 justify-end">
+                              <Shield size={10} /> Profile
+                            </span>
+                            <span className={`inline-block px-1.5 py-0.5 text-[9px] font-extrabold rounded-md border mt-0.5 ${getVolBadgeStyles(metrics.volatility)}`}>
+                              {metrics.volatility}
+                            </span>
+                          </div>
+
+                          <button 
+                            onClick={() => toggleLedger(metrics.id)}
+                            className="p-1.5 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100 text-slate-500 transition-colors"
+                          >
+                            {isOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Granular Fund Distribution Ledger Accordion */}
+                      {isOpen && (
+                        <div className="p-3 bg-slate-50/50 border-t border-slate-100 text-xs animate-in slide-in-from-top-1 duration-150">
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 pb-1 border-b border-slate-200/60">
+                            <Layers size={11}/> Asset Composition Matrix ({metrics.holdings.length})
+                          </div>
+                          <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
+                            {metrics.holdings.map((fund, fIdx) => (
+                              <div key={fIdx} className="bg-white p-2 rounded-lg border border-slate-100 flex items-center justify-between gap-3 shadow-2xs">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                    <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-600 px-1 py-0.25 rounded">
+                                      {fund.ticker}
+                                    </span>
+                                    <span className={`text-[9px] font-medium px-1 rounded-sm border ${getVolBadgeStyles(fund.volatility)}`}>
+                                      {fund.volatility}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] font-semibold text-slate-700 truncate" title={fund.name}>
+                                    {fund.name}
+                                  </p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-[11px] font-extrabold text-slate-900">{fund.weight}%</p>
+                                  <p className="text-[10px] font-medium text-slate-400">TER: {fund.ter.toFixed(2)}%</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
           </div>
         ) : (
           <div className="h-[320px] flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
