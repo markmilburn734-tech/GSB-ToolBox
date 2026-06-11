@@ -27,7 +27,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
     '6m':  { label: '6M',  source: 'Daily_1Y',   points: 126 },
     'ytd': { label: 'YTD', source: 'Daily_1Y',   points: getYTDDays() },
     '1y':  { label: '1Y',  source: 'Daily_1Y',   points: 252 },
-    '3y':  { label: '3Y',  source: 'Weekly_3Y',  points: 156 },
+    '3y':  { label: '3Y',  source: 'Daily_3Y',  points: 756 },
     '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 60 }
   }), []);
 
