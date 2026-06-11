@@ -18,7 +18,7 @@ import RebalancerView           from './components/RebalancerView';
 import MarketPulseView          from './components/MarketPulseView';
 import PerformanceAnalyticsView from './components/PerformanceAnalyticsView';
 import TaxCalculatorView        from './components/TaxCalculatorView';
-import TaxCalculatorView        from './components/IHTCalculatorView';
+import IHTCalculatorView        from './components/IHTCalculatorView';
 import { TabButton }            from './components/TabButton';
 import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle } from './components/Icons';
  
