@@ -18,6 +18,7 @@ import RebalancerView           from './components/RebalancerView';
 import MarketPulseView          from './components/MarketPulseView';
 import PerformanceAnalyticsView from './components/PerformanceAnalyticsView';
 import TaxCalculatorView        from './components/TaxCalculatorView';
+import TaxCalculatorView        from './components/IHTCalculatorView';
 import { TabButton }            from './components/TabButton';
 import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle } from './components/Icons';
  
@@ -27,6 +28,7 @@ import {
 } from './constants';
  
 import { fetchPortfolioData } from './api';
+import IHTCalculatorView from './components/IHTCalculatorView';
  
 // ─── Currency-aware data selector ────────────────────────────────────────────
 //
@@ -163,6 +165,12 @@ export default function App() {
                                     icon={<PoundSign size={16} />}
                                     label="Tax"
                                 />
+                                 <TabButton
+                                    active={activeTab === 'IHT'}
+                                    onClick={() => setActiveTab('IHT')}
+                                    icon={<PoundSign size={16} />}
+                                    label="IHT"
+                                />
                             </div>
                         </div>
  
@@ -245,6 +253,9 @@ export default function App() {
                 )}
                 {activeTab === 'tax' && (
                     <TaxCalculatorView symbol={symbol} />
+                )}
+                {activeTab === 'IHT' && (
+                    <IHTCalculatorView symbol={symbol} />
                 )}
             </main>
         </div>
