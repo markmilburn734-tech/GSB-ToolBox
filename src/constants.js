@@ -624,7 +624,7 @@ export const INITIAL_PRESETS = {
   ]
 },
 },
-   /* "Morningstar Passive Value": {
+    "Morningstar Passive Value": {
     "GBP": {
       "20/80": [
         { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 40.00 },
@@ -923,7 +923,7 @@ export const INITIAL_PRESETS = {
       ]
     }
 },
-    "IB Passive": {
+    /*"IB Passive": {
     "GBP": {
       "20/80": [
         { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 40.00 },
