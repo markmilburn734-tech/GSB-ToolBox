@@ -1,75 +1,126 @@
+
+// ─────────────────────────────────────────────────────────────────────────────
+// constants.js
+//
+// RULE: This file is READ-ONLY configuration. Nothing at runtime should mutate
+// these objects. Exchange rates fetched from the remote Currencies sheet are
+// stored in App-level state (via the api.js return value), not merged back here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── TypeScript-style JSDoc interfaces (usable as @type hints in plain JS) ───
+/**
+ * @typedef {Object} PresetAllocation
+ * @property {string}  name    - Human-readable fund name
+ * @property {string}  isin    - ISIN code
+ * @property {string}  [ticker]- Optional ticker symbol (omitted on ISIN-only presets)
+ * @property {number}  target  - Target allocation percentage (0–100)
+ */
+
+/**
+ * @typedef {{ [profileName: string]: PresetAllocation[] }} CurrencyProfiles
+ * @typedef {{ [currency: string]: CurrencyProfiles }}       PresetGroup
+ * @typedef {{ [groupName: string]: PresetGroup }}           InitialPresets
+ */
+
+/**
+ * @typedef {Object} AssetPrice
+ * @property {number} price
+ * @property {string} isin
+ * @property {string} name
+ * @property {string} currency
+ * @property {number} ytd         - % off 52-week high
+ * @property {number} ter         - Total Expense Ratio / OCR
+ * @property {string} volatility  - e.g. "Low" | "Average" | "High"
+ * @property {number} high_52
+ * @property {number} low_52
+ * @property {number} pct_off_high
+ * @property {string} date
+ */
+
+/**
+ * @typedef {{ [ticker: string]: AssetPrice }} PricesData
+ * @typedef {{ Daily_1Y?: string; Monthly_5Y?: string }} TickerHistory
+ * @typedef {{ [ticker: string]: TickerHistory }} HistoryMap
+ */
+
+/**
+ * @typedef {Object} ExchangeRateMap
+ * @description  Nested map: rates[BASE][TARGET] = multiplier
+ * @type {{ [baseCurrency: string]: { [targetCurrency: string]: number } }}
+ */
+
+// ─── 1. Portfolio Presets ─────────────────────────────────────────────────────
+/** @type {InitialPresets} */
 export const INITIAL_PRESETS = {
     "World Allocation": {
-    "GBP": {
-        "Risk Averse (20/80)": [
-            { name: "Dimensional World Allocation 20/80 Fund", isin: "IE00BYTYTV40", ticker: "0P00016L34.L", target: 99 },
-            { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
-        ],
-        "Cautious (40/60)": [
-            { name: "Dimensional World Allocation 40/60 Fund", isin: "IE00B56FVB15", ticker: "0P0000UUVM.L", target: 99 },
-            { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
-        ],
-        "Balanced (60/40)": [
-            { name: "Dimensional World Allocation 60/40 Fund", isin: "IE00B416SD35", ticker: "0P0000UUVK.L", target: 99 },
-            { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
-        ],
-        "Growth (80/20)": [
-            { name: "Dimensional World Allocation 80/20 Fund", isin: "IE00BYTYV184", ticker: "0P00016L3A.L", target: 99 },
-            { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
-        ],
-        "Adventurous (100/0)": [
-            { name: "Dimensional World Equity Fund", isin: "IE00B3Z8MM50", ticker: "0P0000UUVI.L", target: 99 },
-            { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
-        ]
+        "GBP": {
+            "Risk Averse (20/80)": [
+                { name: "Dimensional World Allocation 20/80 Fund", isin: "IE00BYTYTV40", ticker: "0P00016L34.L", target: 99 },
+                { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
+            ],
+            "Cautious (40/60)": [
+                { name: "Dimensional World Allocation 40/60 Fund", isin: "IE00B56FVB15", ticker: "0P0000UUVM.L", target: 99 },
+                { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
+            ],
+            "Balanced (60/40)": [
+                { name: "Dimensional World Allocation 60/40 Fund", isin: "IE00B416SD35", ticker: "0P0000UUVK.L", target: 99 },
+                { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
+            ],
+            "Growth (80/20)": [
+                { name: "Dimensional World Allocation 80/20 Fund", isin: "IE00BYTYV184", ticker: "0P00016L3A.L", target: 99 },
+                { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
+            ],
+            "Adventurous (100/0)": [
+                { name: "Dimensional World Equity Fund", isin: "IE00B3Z8MM50", ticker: "0P0000UUVI.L", target: 99 },
+                { name: "BlackRock ICS Sterling Liquidity", isin: "IE0004806687", ticker: "0P000024Y9.L", target: 1 }
+            ]
+        },
+        "USD": {
+            "Risk Averse (20/80)": [
+                { name: "Dimensional World Allocation 20/80 Fund", isin: "IE00BYTYTZ87", ticker: "0P00016L38", target: 99 },
+                { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
+            ],
+            "Cautious (40/60)": [
+                { name: "Dimensional World Allocation 40/60 Fund", isin: "IE00BFZ0X665", ticker: "0P0001CWE0", target: 99 },
+                { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
+            ],
+            "Balanced (60/40)": [
+                { name: "Dimensional World Allocation 60/40 Fund", isin: "IE00BFZ0X772", ticker: "0P0001CWDZ", target: 99 },
+                { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
+            ],
+            "Growth (80/20)": [
+                { name: "Dimensional World Allocation 80/20 Fund", isin: "IE00BYTYV523", ticker: "0P00016L3E", target: 99 },
+                { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
+            ],
+            "Adventurous (100/0)": [
+                { name: "Dimensional World Equity Fund", isin: "IE00B3V7VL84", ticker: "0P0000VA0A", target: 99 },
+                { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
+            ]
+        },
+        "EUR": {
+            "Risk Averse (20/80)": [
+                { name: "Dimensional World Allocation 20/80 Fund", isin: "IE00BYTYTX63", ticker: "0P00016L36.F", target: 99 },
+                { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
+            ],
+            "Cautious (40/60)": [
+                { name: "Dimensional World Allocation 40/60 Fund", isin: "IE00B8Y02V60", ticker: "0P0000YN21.F", target: 99 },
+                { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
+            ],
+            "Balanced (60/40)": [
+                { name: "Dimensional World Allocation 60/40 Fund", isin: "IE00B9L4YR86", ticker: "0P0000YN1Z.F", target: 99 },
+                { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
+            ],
+            "Growth (80/20)": [
+                { name: "Dimensional World Allocation 80/20 Fund", isin: "IE00BYTYV309", ticker: "0P00016L3C.F", target: 99 },
+                { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
+            ],
+            "Adventurous (100/0)": [
+                { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 99 },
+                { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
+            ]
+        }
     },
-
-    "USD": {
-        "Risk Averse (20/80)": [
-            { name: "Dimensional World Allocation 20/80 Fund", isin: "IE00BYTYTZ87", ticker: "0P00016L38", target: 99 },
-            { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
-        ],
-        "Cautious (40/60)": [
-            { name: "Dimensional World Allocation 40/60 Fund", isin: "IE00BFZ0X665", ticker: "0P0001CWE0", target: 99 },
-            { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
-        ],
-        "Balanced (60/40)": [
-            { name: "Dimensional World Allocation 60/40 Fund", isin: "IE00BFZ0X772", ticker: "0P0001CWDZ", target: 99 },
-            { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
-        ],
-        "Growth (80/20)": [
-            { name: "Dimensional World Allocation 80/20 Fund", isin: "IE00BYTYV523", ticker: "0P00016L3E", target: 99 },
-            { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
-        ],
-        "Adventurous (100/0)": [
-            { name: "Dimensional World Equity Fund", isin: "IE00B3V7VL84", ticker: "0P0000VA0A", target: 99 },
-            { name: "BlackRock ICS US Dollar Liquidity", isin: "IE0004809582", ticker: "0P0000258M", target: 1 }
-        ]
-    },
-
-    "EUR": {
-        "Risk Averse (20/80)": [
-            { name: "Dimensional World Allocation 20/80 Fund", isin: "IE00BYTYTX63", ticker: "0P00016L36.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
-        ],
-        "Cautious (40/60)": [
-            { name: "Dimensional World Allocation 40/60 Fund", isin: "IE00B8Y02V60", ticker: "0P0000YN21.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
-        ],
-        "Balanced (60/40)": [
-            { name: "Dimensional World Allocation 60/40 Fund", isin: "IE00B9L4YR86", ticker: "0P0000YN1Z.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
-        ],
-        "Growth (80/20)": [
-            { name: "Dimensional World Allocation 80/20 Fund", isin: "IE00BYTYV309", ticker: "0P00016L3C.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
-        ],
-        "Adventurous (100/0)": [
-            { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
-        ]
-    }
-},
-    "Dimensional Core": {
+        "Dimensional Core": {
     "GBP": {
         "Risk Averse (10/90)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B05PYX08", ticker: "0P0000VA1Q.L", target: 89.5 },
@@ -1123,29 +1174,53 @@ export const INITIAL_PRESETS = {
     ]
     }
 }*/
+};
+
+// ─── 2. Static Fallback Exchange Rates ───────────────────────────────────────
+//
+// PURPOSE: Emergency fallback only. These are NEVER mutated. When live rates
+// arrive from the Currencies sheet, they are stored in App-level React state
+// and merged at read-time via the `resolveRate` utility below.
+//
+/** @type {ExchangeRateMap} */
+export const FALLBACK_EXCHANGE_RATES = Object.freeze({
+    "USD": Object.freeze({ GBP: 0.74,   EUR: 0.86,   AUD: 1.40,   AED: 3.6725 }),
+    "GBP": Object.freeze({ USD: 1.35,   EUR: 1.16,   AUD: 1.89,   AED: 4.96   }),
+    "EUR": Object.freeze({ USD: 1.17,   GBP: 0.86,   AUD: 1.64,   AED: 4.29   }),
+    "AUD": Object.freeze({ USD: 0.71,   GBP: 0.53,   EUR: 0.61,   AED: 2.62   }),
+    "AED": Object.freeze({ USD: 0.2723, GBP: 0.2016, EUR: 0.2331, AUD: 0.3802 }),
+});
+
+/**
+ * Looks up a conversion rate, preferring live rates over the static fallback.
+ *
+ * @param {string}         base        - Source currency, e.g. "USD"
+ * @param {string}         target      - Target currency, e.g. "GBP"
+ * @param {ExchangeRateMap} liveRates  - Runtime map fetched from the sheet
+ * @returns {number}                   - Conversion multiplier, or 1.0 if unknown
+ */
+export function resolveRate(base, target, liveRates = {}) {
+    if (base === target) return 1;
+    return (
+        liveRates?.[base]?.[target] ??
+        FALLBACK_EXCHANGE_RATES[base]?.[target] ??
+        1
+    );
 }
 
-   // 3. Currency Exchange Rates
-export const EXCHANGE_RATES = {
-    "USD": { GBP: 0.74, EUR: 0.86, AUD: 1.40, AED: 3.6725 },
-    "GBP": { USD: 1.35, EUR: 1.16, AUD: 1.89, AED: 4.96 },
-    "EUR": { USD: 1.17, GBP: 0.86, AUD: 1.64, AED: 4.29 },
-    "AUD": { USD: 0.71, GBP: 0.53, EUR: 0.61, AED: 2.62 },
-    "AED": { USD: 0.2723, GBP: 0.2016, EUR: 0.2331, AUD: 0.3802 }
-};   
-
-// 4. Currency Symbols Helper
-export const CURRENCY_SYMBOLS = { 
-    'USD': '$', 
-    'GBP': '£', 
-    'EUR': '€', 
-    'AUD': 'A$' 
+// ─── 3. Currency Symbols ──────────────────────────────────────────────────────
+/** @type {{ [currency: string]: string }} */
+export const CURRENCY_SYMBOLS = {
+    'USD': '$',
+    'GBP': '£',
+    'EUR': '€',
+    'AUD': 'A$',
 };
 
-// 5. Data Sources
-export const GOOGLE_SHEETS_CSV_URLS = {
-    STOCKS: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=0&single=true&output=csv",
-    DAILY_HIST: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=689728688&single=true&output=csv",
-    MONTHLY_HIST: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=755116259&single=true&output=csv",
-    CURRENCIES: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=161616036&single=true&output=csv"
-};
+// ─── 4. Remote Data Source URLs ───────────────────────────────────────────────
+export const GOOGLE_SHEETS_CSV_URLS = Object.freeze({
+    STOCKS:      "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=0&single=true&output=csv",
+    DAILY_HIST:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=689728688&single=true&output=csv",
+    MONTHLY_HIST:"https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=755116259&single=true&output=csv",
+    CURRENCIES:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=161616036&single=true&output=csv",
+});
