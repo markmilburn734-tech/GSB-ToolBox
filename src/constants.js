@@ -625,303 +625,303 @@ export const INITIAL_PRESETS = {
 },
 },
     "Morningstar Passive Value": {
-    "GBP": {
-      "20/80": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 40.00 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 39.50 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 11.00 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 2.50 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 2.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 2.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 1.50 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 0.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "30/70": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 34.50 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 34.50 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 17.00 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 4.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 3.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 3.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 2.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 1.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "40/60": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 30.00 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 29.50 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 22.50 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 5.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 4.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 4.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 3.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 1.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "50/50": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 25.00 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 24.50 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 28.50 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 6.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 5.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 5.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 3.50 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 1.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "60/40": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 20.00 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 19.50 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 34.50 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 7.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 6.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 6.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 4.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 2.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "70/30": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 15.00 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 14.50 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 40.00 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 8.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 7.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 7.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 5.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 2.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "80/20": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 10.00 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 9.50 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 45.50 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 9.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 8.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 8.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 6.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 3.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "90/10": [
-        { name: "iShares UK Gilts 0-5yr UCITS ETF GBP", isin: "IE00B4WXJK79", target: 5.00 },
-        { name: "BlackRock ICS Sterling Liquidity Fund Core Acc", isin: "IE0004807107", target: 4.75 },
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 50.75 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 10.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 9.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 9.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 7.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 3.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "100/0": [
-        { name: "iShares Core S&P500 UCITS ETF GBP", isin: "IE00B5BMR087", target: 56.00 },
-        { name: "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", isin: "IE00B4K48X80", target: 11.00 },
-        { name: "Dimensional Global Small Companies Acc GBP", isin: "IE00B67QQ264", target: 10.00 },
-        { name: "Dimensional Global Value Acc GBP", isin: "IE00B3NVPH21", target: 10.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 8.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF GBP", isin: "IE00B4L5YX21", target: 4.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ]
-    },
+     "GBP": {
+  "20/80": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 40.00 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 39.50 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 11.00 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 2.50 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 2.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 2.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 1.50 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 0.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "30/70": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 34.50 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 34.50 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 17.00 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 4.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 3.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 3.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 2.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 1.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "40/60": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 30.00 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 29.50 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 22.50 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 5.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 4.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 4.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 3.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 1.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "50/50": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 25.00 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 24.50 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 28.50 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 6.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 5.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 5.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 3.50 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 1.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "60/40": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 20.00 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 19.50 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 34.50 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 7.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 6.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 6.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 4.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 2.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "70/30": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 15.00 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 14.50 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 40.00 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 8.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 7.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 7.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 5.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 2.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "80/20": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 10.00 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 9.50 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 45.50 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 9.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 8.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 8.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 6.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 3.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "90/10": [
+    { "name": "iShares UK Gilts 0-5yr UCITS ETF GBP", "isin": "IE00B4WXJK79", "ticker": "IGLS.L", "target": 5.00 },
+    { "name": "BlackRock ICS Sterling Liquidity Fund", "isin": "IE0004806687", "ticker": "0P000024YA.L", "target": 4.75 },
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 50.75 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 10.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 9.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 9.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 7.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 3.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "100/0": [
+    { "name": "iShares Core S&P500 UCITS ETF GBP", "isin": "IE00B5BMR087", "ticker": "CSP1.L", "target": 56.00 },
+    { "name": "iShares Core MSCI Europe UCITS ETF EUR (Acc) GBP", "isin": "IE00B4K48X80", "ticker": "SMEA.L", "target": 11.00 },
+    { "name": "Dimensional Global Small Companies Acc GBP", "isin": "IE00B67QQ264", "ticker": "0P0000TH0O.L", "target": 10.00 },
+    { "name": "Dimensional Global Value Acc GBP", "isin": "IE00B3NVPH21", "ticker": "0P0000VA0R.L", "target": 10.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EMIM.L", "target": 8.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF GBP", "isin": "IE00B4L5YX21", "ticker": "SJPA.L", "target": 4.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ]
+},
     "USD": {
-      "20/80": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 40.00 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 39.50 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 11.00 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 2.50 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 2.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 2.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 1.50 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 0.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "30/70": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 34.50 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 34.50 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 17.00 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 4.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 3.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 3.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 2.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 1.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "40/60": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 30.00 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 29.50 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 22.50 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 5.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 4.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 4.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 3.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 1.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "50/50": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 25.00 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 24.50 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 28.50 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 6.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 5.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 5.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 3.50 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 1.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "60/40": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 20.00 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 19.50 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 34.50 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 7.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 6.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 6.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 4.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 2.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "70/30": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 15.00 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 14.50 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 40.00 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 8.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 7.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 7.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 5.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 2.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "80/20": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 10.00 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 9.50 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 45.50 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 9.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 8.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 8.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 6.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 3.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "90/10": [
-        { name: "iShares Treasury Bond 1-3yr UCITS ETF", isin: "IE00B14X4S71", target: 5.00 },
-        { name: "BlackRock ICS US Dollar Liquidity Fund Core Acc", isin: "IE0004810143", target: 4.75 },
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 50.75 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 10.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 9.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 9.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 7.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 3.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "100/0": [
-        { name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", target: 56.00 },
-        { name: "Xtrackers MSCI Europe UCITS ETF 1C USD", isin: "LU0274209237", target: 11.00 },
-        { name: "Dimensional Global Small Companies Acc USD", isin: "IE00B3MRDK01", target: 10.00 },
-        { name: "Dimensional Global Value Fund Acc USD", isin: "IE00B687H819", target: 10.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF USD", isin: "IE00BKM4GZ66", target: 8.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF USD", isin: "IE00B4L5YX21", target: 4.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ]
-    },
+  "20/80": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 40.00 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 39.50 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 11.00 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 2.50 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 2.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 2.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 1.50 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 0.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "30/70": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 34.50 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 34.50 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 17.00 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 4.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 3.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 3.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 2.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 1.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "40/60": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 30.00 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 29.50 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 22.50 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 5.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 4.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 4.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 3.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 1.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "50/50": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 25.00 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 24.50 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 28.50 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 6.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 5.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 5.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 3.50 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 1.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "60/40": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 20.00 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 19.50 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 34.50 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 7.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 6.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 6.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 4.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 2.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "70/30": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 15.00 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 14.50 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 40.00 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 8.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 7.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 7.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 5.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 2.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "80/20": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 10.00 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 9.50 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 45.50 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 9.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 8.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 8.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 6.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 3.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "90/10": [
+    { "name": "iShares Treasury Bond 1-3yr UCITS ETF", "isin": "IE00B14X4S71", "ticker": "IDBT.L", "target": 5.00 },
+    { "name": "BlackRock ICS US Dollar Liquidity Fund", "isin": "IE0004809582", "ticker": "0P0000258N", "target": 4.75 },
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 50.75 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 10.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 9.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 9.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 7.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 3.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "100/0": [
+    { "name": "iShares VII plc Core S&P 500 UCITS ETF Acc USD", "isin": "IE00B5BMR087", "ticker": "CSPX.L", "target": 56.00 },
+    { "name": "Xtrackers MSCI Europe UCITS ETF 1C USD", "isin": "LU0274209237", "ticker": "XMED.L", "target": 11.00 },
+    { "name": "Dimensional Global Small Companies Acc USD", "isin": "IE00B3MRDK01", "ticker": "0P0000TH0L", "target": 10.00 },
+    { "name": "Dimensional Global Value Fund Acc USD", "isin": "IE00B687H819", "ticker": "0P0000VA0N", "target": 10.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF USD", "isin": "IE00BKM4GZ66", "ticker": "EIMI.L", "target": 8.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF USD", "isin": "IE00B4L5YX21", "ticker": "IJPA.L", "target": 4.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ]
+},
     "EUR": {
-      "20/80": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 40.00 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 39.50 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 11.00 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 2.50 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 2.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 2.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 1.50 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 0.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "30/70": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 34.50 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 34.50 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 17.00 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 4.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 3.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 3.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 2.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 1.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "40/60": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 30.00 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 29.50 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 22.50 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 5.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 4.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 4.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 3.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 1.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "50/50": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 25.00 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 24.50 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 28.50 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 6.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 5.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 5.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 3.50 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 1.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "60/40": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 20.00 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 19.50 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 34.50 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 7.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 6.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 6.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 4.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 2.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "70/30": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 15.00 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 14.50 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 40.00 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 8.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 7.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 7.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 5.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 2.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "80/20": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 10.00 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 9.50 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 45.50 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 9.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 8.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 8.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 6.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 3.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "90/10": [
-        { name: "iShares EUR Govt Bond 1-3yr UCITS ETF", isin: "IE00B14X4Q57", target: 5.00 },
-        { name: "BlackRock ICS Euro Liquidity Fund Core Acc", isin: "IE0005023910", target: 4.75 },
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 50.75 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 10.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 9.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 9.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 7.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 3.50 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ],
-      "100/0": [
-        { name: "iShares S&P 500 EUR hedged UCITS ETF", isin: "IE00B3ZW0K18", target: 56.00 },
-        { name: "iShares MSCI Europe UCITS ETF Acc EUR", isin: "IE00B4K48X80", target: 11.00 },
-        { name: "Dimensional Global Small Companies EUR ACC", isin: "IE00B67WB637", target: 10.00 },
-        { name: "Dimensional Global Value Fund EUR, Acc", isin: "IE00B60LX167", target: 10.00 },
-        { name: "iShares Core MSCI EM IMI UCITS ETF", isin: "IE00BKM4GZ66", target: 8.00 },
-        { name: "iShares Core MSCI Japan IMI UCITS ETF EUR", isin: "IE00B4L5YX21", target: 4.00 },
-        { name: "Cash", isin: "N/A", target: 1.00 }
-      ]
-    }
+  "20/80": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 40.00 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 39.50 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 11.00 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 2.50 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 2.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 2.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 1.50 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 0.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "30/70": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 34.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 34.50 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 17.00 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 4.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 3.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 3.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 2.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 1.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "40/60": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 30.00 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 29.50 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 22.50 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 5.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 4.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 4.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 3.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 1.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "50/50": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 25.00 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 24.50 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 28.50 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 6.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 5.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 5.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 3.50 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 1.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "60/40": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 20.00 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 19.50 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 34.50 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 7.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 6.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 6.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 4.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 2.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "70/30": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 15.00 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 14.50 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 40.00 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 8.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 7.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 7.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 5.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 2.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "80/20": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 10.00 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 9.50 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 45.50 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 9.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 8.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 8.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 6.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 3.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "90/10": [
+    { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 5.00 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0000247G.F", "target": 4.75 },
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 50.75 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 10.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 9.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 9.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 7.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 3.50 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ],
+  "100/0": [
+    { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 56.00 },
+    { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 11.00 },
+    { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 10.00 },
+    { "name": "Dimensional Global Value Fund EUR, Acc", "isin": "IE00B60LX167", "ticker": "0P0000VA0P.F", "target": 10.00 },
+    { "name": "iShares Core MSCI EM IMI UCITS ETF", "isin": "IE00BKM4GZ66", "ticker": "EIMI.MI", "target": 8.00 },
+    { "name": "iShares Core MSCI Japan IMI UCITS ETF EUR", "isin": "IE00B4L5YX21", "ticker": "IJPA.AS", "target": 4.00 },
+    { "name": "Cash", "isin": "N/A", "ticker": "N/A", "target": 1.00 }
+  ]
+},
 },
     /*"IB Passive": {
     "GBP": {
