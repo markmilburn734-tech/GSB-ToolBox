@@ -49,23 +49,23 @@ export const INITIAL_PRESETS = {
     "EUR": {
         "Risk Averse (20/80)": [
             { name: "Dimensional World Allocation 20/80 Fund", isin: "IE00BYTYTX63", ticker: "0P00016L36.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Cautious (40/60)": [
             { name: "Dimensional World Allocation 40/60 Fund", isin: "IE00B8Y02V60", ticker: "0P0000YN21.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Balanced (60/40)": [
             { name: "Dimensional World Allocation 60/40 Fund", isin: "IE00B9L4YR86", ticker: "0P0000YN1Z.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Growth (80/20)": [
             { name: "Dimensional World Allocation 80/20 Fund", isin: "IE00BYTYV309", ticker: "0P00016L3C.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Adventurous (100/0)": [
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ]
     }
 },
@@ -178,51 +178,51 @@ export const INITIAL_PRESETS = {
         "Risk Averse (10/90)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 89.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 9.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Defensive (20/80)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 79.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 19.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Cautious (30/70)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 69.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 29.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Conservative (40/60)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 59.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 39.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Conservative Balanced (50/50)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 49.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 49.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Balanced (60/40)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 39.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 59.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Growth (70/30)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 29.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 69.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Ambitious (80/20)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 19.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 79.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Speculative (90/10)": [
             { name: "Dimensional Global Short Fixed Income", isin: "IE00B3QL0Y14", ticker: "0P0000VA1M.F", target: 9.5 },
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 89.5 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ],
         "Adventurous (100/0)": [
             { name: "Dimensional World Equity Fund", isin: "IE00B4MJ5D07", ticker: "0P0000V9WM.F", target: 99 },
-            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P00001Q06D.F", target: 1 }
+            { name: "BlackRock ICS Euro Liquidity", isin: "IE000BAFXJO9", ticker: "0P0001Q06D.F", target: 1 }
         ]
     },
 },
@@ -428,7 +428,7 @@ export const INITIAL_PRESETS = {
     "EUR": {
   "20/80": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 40.00 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 39.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 39.50 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 11.00 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 2.50 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 2.00 },
@@ -439,7 +439,7 @@ export const INITIAL_PRESETS = {
   ],
   "30/70": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 34.50 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 34.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 34.50 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 17.00 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 4.00 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 3.00 },
@@ -450,7 +450,7 @@ export const INITIAL_PRESETS = {
   ],
   "40/60": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 30.00 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 29.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 29.50 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 22.50 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 5.00 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 4.00 },
@@ -461,7 +461,7 @@ export const INITIAL_PRESETS = {
   ],
   "50/50": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 25.00 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 24.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 24.50 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 28.50 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 6.00 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 5.00 },
@@ -472,7 +472,7 @@ export const INITIAL_PRESETS = {
   ],
   "60/40": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 20.00 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 19.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 19.50 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 34.50 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 7.00 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 6.00 },
@@ -483,7 +483,7 @@ export const INITIAL_PRESETS = {
   ],
   "70/30": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 15.00 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 14.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 14.50 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 40.00 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 8.00 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 7.00 },
@@ -494,7 +494,7 @@ export const INITIAL_PRESETS = {
   ],
   "80/20": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 10.00 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 9.50 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 9.50 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 45.50 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 9.00 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 8.00 },
@@ -505,7 +505,7 @@ export const INITIAL_PRESETS = {
   ],
   "90/10": [
     { "name": "iShares EUR Govt Bond 1-3yr UCITS ETF", "isin": "IE00B14X4Q57", "ticker": "IBGS.MI", "target": 5.00 },
-    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P00001Q06D.F", "target": 4.75 },
+    { "name": "BlackRock ICS Euro Liquidity Fund", "isin": "IE000BAFXJO9", "ticker": "0P0001Q06D.F", "target": 4.75 },
     { "name": "iShares S&P 500 EUR hedged UCITS ETF", "isin": "IE00B3ZW0K18", "ticker": "IUSE.L", "target": 50.75 },
     { "name": "iShares MSCI Europe UCITS ETF Acc EUR", "isin": "IE00B4K48X80", "ticker": "SMEA.MI", "target": 10.00 },
     { "name": "Dimensional Global Small Companies EUR ACC", "isin": "IE00B67WB637", "ticker": "0P0000TH0M.F", "target": 9.00 },
