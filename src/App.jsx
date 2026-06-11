@@ -28,7 +28,6 @@ import {
 } from './constants';
  
 import { fetchPortfolioData } from './api';
-import IHTCalculatorView from './components/IHTCalculatorView';
  
 // ─── Currency-aware data selector ────────────────────────────────────────────
 //
