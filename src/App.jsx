@@ -220,7 +220,7 @@ export default function App() {
                         symbol={symbol}
                         currency={activeCurrency}
                         setActiveCurrency={setActiveCurrency}
-                        pricesData={pricesForCurrency}
+                        pricesData={pricesData}
                         liveRates={liveRates}
                     />
                 )}
