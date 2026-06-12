@@ -1,390 +1,94 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
+// ─────────────────────────────────────────────────────────────────────────────
+// PerformanceAnalyticsView.jsx
+//
+// Streamlined presentation component. ALL state, calculations, simulation
+// logic, and chart-interaction handlers live in `usePerformanceMetrics`
+// (PerformanceLogic.js). This component is purely declarative: it destructures
+// the hook's return value and renders the UI.
+//
+// PRESERVED FROM ORIGINAL:
+//   - Tailwind layout wrappers (header panel, series cards, chart block,
+//     fundamentals breakdown grid)
+//   - Recharts: <AreaChart>, <Area>, <ReferenceArea>, <Tooltip>, <CartesianGrid>,
+//     <XAxis>, <YAxis>, <ResponsiveContainer>
+//   - Drag-to-cross-slice interaction (mouseDown / mouseMove / mouseUp / mouseLeave)
+//   - Interactive, expandable underlying-fund accordions (Asset Composition Matrix)
+//
+// NEW:
+//   - "Sandbox Injector" dropdown per series card, wired to
+//     `injectSimulatedPortfolio(sel.id, type)` from the hook — replaces the
+//     broken original implementation (`currency` / `onUpdatePortfolio` were
+//     undefined in the source file).
+// ─────────────────────────────────────────────────────────────────────────────
+
+import React from 'react';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
   ReferenceArea,
   ResponsiveContainer
 } from 'recharts';
 import { TrendingUp, Plus, X, MousePointer2, Shield, Percent, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 
-const COLORS = [ '#2d0738', '#9966ff', '#00a0f0', '#fc5b3f']; 
+import { usePerformanceMetrics } from './PerformanceLogic';
 
-export default function PerformanceAnalyticsView({ presets = {}, historicalData = {}, pricesData = {}, symbol = "$" }) {
-  
-  const getYTDDays = () => {
-      const now = new Date();
-      const start = new Date(now.getFullYear(), 0, 1);
-      const calendarDays = Math.max(1, Math.floor((now - start) / (24 * 60 * 60 * 1000)));
-      return Math.floor(calendarDays * (252 / 365)); 
-  };
+export default function PerformanceAnalyticsView({ presets = {}, historicalData = {}, pricesData = {}, symbol = '$' }) {
 
-  const TIMEFRAMES = useMemo(() => ({
-    '3m':  { label: '3M',  source: 'Daily_1Y',   points: 63 },
-    '6m':  { label: '6M',  source: 'Daily_1Y',   points: 126 },
-    'ytd': { label: 'YTD', source: 'Daily_1Y',   points: getYTDDays() },
-    '1y':  { label: '1Y',  source: 'Daily_1Y',   points: 252 },
-    '3y':  { label: '3Y',  source: 'Daily_1Y',   points: 756 },
-    '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 60 }
-  }), []);
+  const {
+    COLORS,
+    TIMEFRAMES,
 
-  const [timeframe, setTimeframe] = useState('1y');
-  const [selections, setSelections] = useState([
-    { id: 'init-0', type: 'preset', strategy: 'World Allocation', currency: 'USD', profile: 'Risk Averse (20/80)', assetTicker: '' }
-  ]);
+    timeframe,
+    setTimeframe,
 
-  const [refAreaLeft, setRefAreaLeft] = useState(null);
-  const [refAreaRight, setRefAreaRight] = useState(null);
-  const [isSelecting, setIsSelecting] = useState(false);
-  const [customStats, setCustomStats] = useState(null);
-  
-  // Track open/closed state for the granular fund lists
-  const [expandedLedger, setExpandedLedger] = useState({});
+    selections,
+    addSelection,
+    removeSelection,
+    updateSelection,
+    getTickerOptions,
 
-  useEffect(() => {
-    clearSelection();
-  }, [timeframe]);
+    injectSimulatedPortfolio,
 
-  const addSelection = () => {
-    if (selections.length >= 4) return;
-    const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-    setSelections([...selections, { id: uniqueId, type: 'preset', strategy: '', currency: '', profile: '', assetTicker: '' }]);
-  };
+    expandedLedger,
+    toggleLedger,
 
-  const removeSelection = (id) => {
-    setSelections(selections.filter(s => s.id !== id));
-  };
+    chartData,
+    structuralMetrics,
+    finalStats,
+    displayStats,
+    customStats,
+    isChartPopulated,
 
-  const updateSelection = (id, field, value) => {
-    setSelections(selections.map(s => {
-        if (s.id !== id) return s;
-        const updated = { ...s, [field]: value };
-        if (field === 'type') {
-            updated.strategy = ''; updated.profile = ''; updated.assetTicker = '';
-        }
-        if (field === 'strategy' || field === 'currency') updated.profile = '';
-        if (field === 'currency' && updated.type === 'asset') updated.assetTicker = '';
-        return updated;
-    }));
-  };
+    refAreaLeft,
+    refAreaRight,
+    isSelecting,
+    handleMouseDown,
+    handleMouseMove,
+    handleMouseUp,
+    clearSelection,
 
-  const toggleLedger = (id) => {
-    setExpandedLedger(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const calculateSeries = (sel, timeframeConfig) => {
-    let portfolio = [];
-    
-    if (sel.type === 'preset') {
-        if (!sel.strategy || !sel.currency || !sel.profile || !presets[sel.strategy]?.[sel.currency]?.[sel.profile]) {
-            return null;
-        }
-        portfolio = presets[sel.strategy][sel.currency][sel.profile];
-    } else {
-        if (!sel.currency || !sel.assetTicker) return null;
-        portfolio = [{ ticker: sel.assetTicker, target: 100 }];
-    }
-
-    const { source, points } = timeframeConfig;
-    
-    const parsedHistories = portfolio.map(asset => {
-        let rawTicker = (asset.ticker || "").trim().toUpperCase();
-        let rawIsin = (asset.isin || "").trim().toUpperCase();
-
-        if (rawTicker === "N/A" || (!rawTicker && !rawIsin)) return [];
-
-        let actualDataKey = Object.keys(historicalData).find(key => {
-            const upperKey = key.trim().toUpperCase();
-            return upperKey === rawTicker || upperKey === rawIsin;
-        });
-
-        const hString = actualDataKey ? historicalData[actualDataKey]?.[source] : null;
-        
-        if (!hString || hString === "N/A") {
-            console.warn(`[GSB Tracker] Missing historical data for: "${rawTicker || rawIsin}" under: "${source}"`);
-            return [];
-        }
-        return hString.split(';').map(v => parseFloat(v) || 0);
-    });
-
-    if (parsedHistories.every(h => h.length === 0)) return null;
-
-    let maxAvailablePoints = points;
-    parsedHistories.forEach(h => {
-       if (h.length > 0 && h.length < maxAvailablePoints) {
-          maxAvailablePoints = h.length;
-       }
-    });
-
-    const finalPointsCount = Math.max(1, maxAvailablePoints);
-    const alignedData = new Array(finalPointsCount).fill(null);
-    let initialTotal = 0;
-    
-    portfolio.forEach((asset, i) => {
-        const history = parsedHistories[i];
-        if (!history || history.length === 0) return;
-        const startIndex = Math.max(0, history.length - finalPointsCount);
-        const weight = asset.target || asset.weight || 100;
-        initialTotal += (history[startIndex] * (weight / 100));
-    });
-
-    if (initialTotal === 0) return null;
-
-    for (let p = 0; p < finalPointsCount; p++) {
-        let currentTotal = 0;
-        let hasData = false;
-
-        portfolio.forEach((asset, i) => {
-            const history = parsedHistories[i];
-            if (!history || history.length === 0) return;
-            const historyIndex = history.length - finalPointsCount + p;
-            
-            if (historyIndex >= 0 && historyIndex < history.length) {
-                const weight = asset.target || asset.weight || 100;
-                currentTotal += (history[historyIndex] * (weight / 100));
-                hasData = true;
-            }
-        });
-
-        if (hasData) {
-            const pctGrowth = ((currentTotal - initialTotal) / initialTotal) * 100;
-            alignedData[p] = {
-                growth: parseFloat(pctGrowth.toFixed(2)),
-                raw: currentTotal
-            };
-        }
-    }
-
-    return alignedData;
-  };
-
-  // --- Dynamic Fundamental Metrics Allocation Engine ---
-  const structuralMetrics = useMemo(() => {
-    return selections.map((sel) => {
-      let portfolio = [];
-      if (sel.type === 'preset') {
-        if (!sel.strategy || !sel.currency || !sel.profile || !presets[sel.strategy]?.[sel.currency]?.[sel.profile]) {
-          return null;
-        }
-        portfolio = presets[sel.strategy][sel.currency][sel.profile];
-      } else {
-        if (!sel.currency || !sel.assetTicker) return null;
-        portfolio = [{ ticker: sel.assetTicker, target: 100 }];
-      }
-
-      let totalWeight = 0;
-      let weightedTer = 0;
-      const volCounts = { 'High': 0, 'Above Average': 0, 'Average': 0, 'Below Average': 0, 'Low': 0 };
-      let dynamicName = 'Asset Strategy';
-      const holdingsDetails = [];
-
-      portfolio.forEach(asset => {
-        const targetKey = asset.ticker ? asset.ticker.trim().toUpperCase() : '';
-        const weight = asset.target || asset.weight || 100;
-        const assetMeta = sel.currency && pricesData[sel.currency]?.[targetKey];
-
-        // Access properties matching the structural mappings from api.js
-        const itemTer = assetMeta ? (assetMeta.ter || 0) : 0;
-        const itemVol = assetMeta ? (assetMeta.volatility || 'Average') : 'Average';
-        const itemName = assetMeta ? assetMeta.name : (asset.name || 'Unknown Asset');
-
-        totalWeight += weight;
-        weightedTer += itemTer * weight;
-        
-        if (volCounts[itemVol] !== undefined) {
-          volCounts[itemVol] += weight;
-        } else {
-          volCounts['Average'] += weight;
-        }
-
-        holdingsDetails.push({
-          ticker: targetKey || 'N/A',
-          name: itemName,
-          weight: weight,
-          ter: itemTer,
-          volatility: itemVol
-        });
-
-        if (sel.type === 'asset' && assetMeta) dynamicName = assetMeta.name;
-      });
-
-      if (totalWeight === 0) return null;
-
-      // Determine predominant volatility profile based on weights
-      let dominantVol = 'Average';
-      let maxVolWeight = -1;
-      Object.entries(volCounts).forEach(([key, val]) => {
-        if (val > maxVolWeight) {
-          maxVolWeight = val;
-          dominantVol = key;
-        }
-      });
-
-      return {
-        id: sel.id,
-        name: sel.type === 'preset' ? sel.profile : dynamicName,
-        ter: totalWeight > 0 ? (weightedTer / totalWeight) : 0,
-        volatility: dominantVol,
-        holdings: holdingsDetails
-      };
-    });
-  }, [selections, presets, pricesData]);
-
-  const chartData = useMemo(() => {
-    const config = TIMEFRAMES[timeframe];
-    const seriesResults = selections.map(sel => calculateSeries(sel, config));
-    
-    const validSeriesLengths = seriesResults.filter(s => s !== null).map(s => s.length);
-    const actualPointsRendered = validSeriesLengths.length > 0 
-      ? Math.max(...validSeriesLengths) 
-      : config.points;
-
-    const labels = [];
-    const now = new Date();
-    const isWeekly = config.source.includes('Weekly');
-    const isDaily = config.source.includes('Daily');
-    
-    for (let i = 0; i < actualPointsRendered; i++) {
-        const d = new Date(now);
-        if (isDaily) {
-            d.setDate(d.getDate() - Math.floor((actualPointsRendered - 1 - i) * (365/252)));
-        } else if (isWeekly) {
-            d.setDate(d.getDate() - (actualPointsRendered - 1 - i) * 7);
-        } else {
-            d.setMonth(d.getMonth() - (actualPointsRendered - 1 - i));
-        }
-        
-        if (isDaily && actualPointsRendered <= 126) {
-            labels.push(d.toLocaleString('default', { month: 'short', day: 'numeric' }));
-        } else {
-            labels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
-        }
-    }
-
-    const data = [];
-    for (let i = 0; i < actualPointsRendered; i++) {
-        const point = { name: labels[i] };
-        selections.forEach((sel, idx) => {
-            const dataPoint = seriesResults[idx] && seriesResults[idx][i] ? seriesResults[idx][i] : null;
-            point[`series_${idx}`] = dataPoint ? dataPoint.growth : null;
-            point[`raw_${idx}`] = dataPoint ? dataPoint.raw : null;
-        });
-        data.push(point);
-    }
-    
-    return data;
-  }, [selections, timeframe, presets, historicalData, pricesData, TIMEFRAMES]);
-
-  const handleMouseDown = (e) => {
-    if (e?.activeLabel) {
-      setRefAreaLeft(e.activeLabel);
-      setRefAreaRight(e.activeLabel);
-      setIsSelecting(true);
-      setCustomStats(null);
-    }
-  };
-
-  const handleMouseMove = (e) => {
-    if (isSelecting && e?.activeLabel) {
-      setRefAreaRight(e.activeLabel);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsSelecting(false);
-    
-    if (refAreaLeft && refAreaRight && refAreaLeft !== refAreaRight) {
-      let startIndex = chartData.findIndex(d => d.name === refAreaLeft);
-      let endIndex = chartData.findIndex(d => d.name === refAreaRight);
-      
-      if (startIndex > endIndex) {
-        [startIndex, endIndex] = [endIndex, startIndex];
-        setRefAreaLeft(chartData[startIndex].name);
-        setRefAreaRight(chartData[endIndex].name);
-      }
-
-      const stats = selections.map((sel, idx) => {
-        const startRaw = chartData[startIndex]?.[`raw_${idx}`];
-        const endRaw = chartData[endIndex]?.[`raw_${idx}`];
-        
-        if (startRaw && endRaw) {
-           const percentChange = ((endRaw - startRaw) / startRaw) * 100;
-           const targetKey = sel.assetTicker ? sel.assetTicker.trim().toUpperCase() : '';
-           const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][targetKey]
-             ? pricesData[sel.currency][targetKey].name
-             : 'Asset';
-
-           return {
-              id: sel.id,
-              name: sel.type === 'preset' ? (sel.profile || 'Preset') : assetName,
-              return: percentChange
-           };
-        }
-        return null;
-      }).filter(Boolean);
-
-      setCustomStats({ start: chartData[startIndex].name, end: chartData[endIndex].name, stats });
-    } else {
-      setRefAreaLeft(null); setRefAreaRight(null); setCustomStats(null);
-    }
-  };
-
-  const clearSelection = () => {
-      setRefAreaLeft(null); setRefAreaRight(null); setCustomStats(null);
-  };
-
-  const finalStats = useMemo(() => {
-    if (chartData.length === 0) return [];
-    const lastData = chartData[chartData.length - 1];
-    return selections.map((sel, idx) => {
-      const targetKey = sel.assetTicker ? sel.assetTicker.trim().toUpperCase() : '';
-      const assetName = sel.currency && pricesData[sel.currency] && pricesData[sel.currency][targetKey]
-        ? pricesData[sel.currency][targetKey].name
-        : 'Asset';
-
-      return {
-         id: sel.id,
-         name: sel.type === 'preset' ? (sel.profile || 'Preset') : assetName,
-         return: lastData ? lastData[`series_${idx}`] : 0
-      };
-    });
-  }, [chartData, selections, pricesData]);
-
-  const displayStats = customStats ? customStats.stats : finalStats;
-  
-  const isChartPopulated = useMemo(() => {
-    return chartData.some(d => Object.keys(d).some(k => k.startsWith('series_') && d[k] !== null && d[k] !== undefined));
-  }, [chartData]);
-
-  // Unified color mapper for all volatility variations found in the sheets
-  const getVolBadgeStyles = (vol) => {
-    const cleanVol = String(vol).trim().toLowerCase();
-    if (['low', 'below average'].includes(cleanVol)) {
-      return 'bg-emerald-50 text-emerald-700 border-emerald-100';
-    }
-    if (['high', 'above average'].includes(cleanVol)) {
-      return 'bg-rose-50 text-rose-700 border-rose-100';
-    }
-    return 'bg-amber-50 text-amber-700 border-amber-100';
-  };
+    getVolBadgeStyles,
+  } = usePerformanceMetrics({ presets, historicalData, pricesData });
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
+
       {/* Header Panel */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-xs">
         <div>
           <h3 className="text-2xl font-extrabold text-slate-900 tracking-tight">GSB Analytics</h3>
           <p className="text-slate-500 text-xs font-medium mt-0.5 flex items-center gap-2">
-              Compare strategic portfolio variance models. 
-              <span className="text-amber-600 font-bold flex items-center gap-1">
-                <MousePointer2 size={12}/> Drag chart canvas to cross-slice return frames.
-              </span>
+            Compare strategic portfolio variance models.
+            <span className="text-amber-600 font-bold flex items-center gap-1">
+              <MousePointer2 size={12} /> Drag chart canvas to cross-slice return frames.
+            </span>
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end">
           <div className="inline-flex p-0.5 bg-slate-100 rounded-xl">
             {Object.entries(TIMEFRAMES).map(([key, opt]) => (
@@ -400,92 +104,126 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
             ))}
           </div>
 
-          <button 
+          <button
             onClick={addSelection}
             disabled={selections.length >= 4}
             className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-40 transition-all shadow-xs"
           >
-            <Plus size={14}/> Compare ({selections.length}/4)
+            <Plus size={14} /> Compare ({selections.length}/4)
           </button>
         </div>
       </div>
 
-      {/* Grid Inputs */}
+      {/* Series Selector Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
         {selections.map((sel, idx) => (
           <div key={sel.id} className="p-3.5 rounded-2xl border border-slate-100 bg-white shadow-xs relative flex flex-col justify-between min-h-[110px]">
+
+            {/* Card Header: color dot, series label, remove button */}
             <div className="flex items-center justify-between mb-2">
-               <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full shadow-xs" style={{ backgroundColor: COLORS[idx] }}></div>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Series {idx + 1}</span>
-               </div>
-               {selections.length > 1 && (
-                  <button onClick={() => removeSelection(sel.id)} className="text-slate-300 hover:text-rose-500 transition-colors">
-                      <X size={14} />
-                  </button>
-               )}
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full shadow-xs" style={{ backgroundColor: COLORS[idx] }} />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Series {idx + 1}</span>
+              </div>
+              {selections.length > 1 && (
+                <button onClick={() => removeSelection(sel.id)} className="text-slate-300 hover:text-rose-500 transition-colors">
+                  <X size={14} />
+                </button>
+              )}
             </div>
 
             <div className="space-y-1.5">
-                <div className="flex gap-1.5">
-                    <select
-                        className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
-                        value={sel.type}
-                        onChange={(e) => updateSelection(sel.id, 'type', e.target.value)}
-                    >
-                        <option value="preset">Preset Strategy</option>
-                        <option value="asset">Individual Asset</option>
-                    </select>
-                    <select
-                        className="w-20 px-1.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
-                        value={sel.currency}
-                        onChange={(e) => updateSelection(sel.id, 'currency', e.target.value)}
-                    >
-                        <option value="">Curr</option>
-                        <option value="USD">USD</option>
-                        <option value="GBP">GBP</option>
-                        <option value="EUR">EUR</option>
-                        <option value="AUD">AUD</option>
-                    </select>
-                </div>
 
-                {sel.type === 'preset' ? (
-                    <div className="flex gap-1.5">
-                        <select
-                            className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
-                            value={sel.strategy}
-                            onChange={(e) => updateSelection(sel.id, 'strategy', e.target.value)}
-                        >
-                            <option value="">Select Strategy</option>
-                            {Object.keys(presets).map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        <select
-                            className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
-                            disabled={!sel.strategy || !sel.currency}
-                            value={sel.profile}
-                            onChange={(e) => updateSelection(sel.id, 'profile', e.target.value)}
-                        >
-                            <option value="">Risk Profile</option>
-                            {sel.strategy && sel.currency && presets[sel.strategy]?.[sel.currency] && 
-                                Object.keys(presets[sel.strategy][sel.currency]).map(p => <option key={p} value={p}>{p}</option>)
-                            }
-                        </select>
-                    </div>
-                ) : (
-                    <select
-                        className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
-                        disabled={!sel.currency}
-                        value={sel.assetTicker}
-                        onChange={(e) => updateSelection(sel.id, 'assetTicker', e.target.value)}
-                    >
-                        <option value="">Select Ticker...</option>
-                        {sel.currency && pricesData[sel.currency] && 
-                            Object.keys(pricesData[sel.currency]).map(ticker => (
-                                <option key={ticker} value={ticker}>{ticker} - {pricesData[sel.currency][ticker].name}</option>
-                            ))
-                        }
-                    </select>
-                )}
+              {/* Type + Currency row */}
+              <div className="flex gap-1.5">
+                <select
+                  className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                  value={sel.type}
+                  onChange={(e) => updateSelection(sel.id, 'type', e.target.value)}
+                >
+                  <option value="preset">Preset Strategy</option>
+                  <option value="asset">Individual Asset</option>
+                  <option value="simulation">Simulated Portfolio</option>
+                </select>
+                <select
+                  className="w-20 px-1.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                  value={sel.currency}
+                  onChange={(e) => updateSelection(sel.id, 'currency', e.target.value)}
+                >
+                  <option value="">Curr</option>
+                  <option value="USD">USD</option>
+                  <option value="GBP">GBP</option>
+                  <option value="EUR">EUR</option>
+                  <option value="AUD">AUD</option>
+                </select>
+              </div>
+
+              {/* Sandbox Injector */}
+              <div className="relative flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase text-slate-400 shrink-0">Sandbox:</span>
+                <select
+                  value=""
+                  disabled={!sel.currency}
+                  onChange={(e) => {
+                    if (!e.target.value) return;
+                    injectSimulatedPortfolio(sel.id, e.target.value);
+                    e.target.value = ''; // reset dropdown to placeholder
+                  }}
+                  className="flex-1 bg-brand text-white border border-brand2 rounded-lg px-2 py-1.5 text-[11px] font-medium cursor-pointer outline-none hover:bg-brand2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <option value="" className="text-gray-700 bg-white">-- Quick Generate Portfolio --</option>
+                  <option value="RANDOM" className="text-gray-700 bg-white">🎲 Fully Randomized Allocation</option>
+                  <option value="BALANCED_60_40" className="text-gray-700 bg-white">⚖️ Pre-set Balanced (60/40 Mock)</option>
+                  <option value="AGGRESSIVE_GROWTH" className="text-gray-700 bg-white">🚀 High-Growth Equity Run</option>
+                </select>
+              </div>
+
+              {/* Type-dependent selector row */}
+              {sel.type === 'preset' && (
+                <div className="flex gap-1.5">
+                  <select
+                    className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none"
+                    value={sel.strategy}
+                    onChange={(e) => updateSelection(sel.id, 'strategy', e.target.value)}
+                  >
+                    <option value="">Select Strategy</option>
+                    {Object.keys(presets).map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                  <select
+                    className="flex-1 px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
+                    disabled={!sel.strategy || !sel.currency}
+                    value={sel.profile}
+                    onChange={(e) => updateSelection(sel.id, 'profile', e.target.value)}
+                  >
+                    <option value="">Risk Profile</option>
+                    {sel.strategy && sel.currency && presets[sel.strategy]?.[sel.currency] &&
+                      Object.keys(presets[sel.strategy][sel.currency]).map(p => <option key={p} value={p}>{p}</option>)
+                    }
+                  </select>
+                </div>
+              )}
+
+              {sel.type === 'asset' && (
+                <select
+                  className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700 outline-none disabled:opacity-40"
+                  disabled={!sel.currency}
+                  value={sel.assetTicker}
+                  onChange={(e) => updateSelection(sel.id, 'assetTicker', e.target.value)}
+                >
+                  <option value="">Select Ticker…</option>
+                  {getTickerOptions(sel).map(({ ticker, name }) => (
+                    <option key={ticker} value={ticker}>{ticker} — {name}</option>
+                  ))}
+                </select>
+              )}
+
+              {sel.type === 'simulation' && (
+                <div className="px-2 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs font-semibold text-slate-700">
+                  {sel.simulatedPortfolio && sel.simulatedPortfolio.length > 0
+                    ? `${sel.simulationLabel || 'Simulated Portfolio'} (${sel.simulatedPortfolio.length} holdings)`
+                    : (sel.currency ? 'Use Sandbox above to generate a portfolio' : 'Select a currency first')}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -495,93 +233,99 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
       <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-xs relative">
         {isChartPopulated ? (
           <div className="space-y-4">
-            <div className={`flex flex-wrap items-center gap-4 border-b pb-4 transition-all ${customStats ? 'border-amber-100 bg-amber-50/40 -mx-5 px-5 -mt-5 pt-5 rounded-t-2xl' : 'border-slate-100'}`}>
-               <div className="w-full flex justify-between items-center">
-                   <p className={`text-[10px] font-bold uppercase tracking-wider ${customStats ? 'text-amber-700' : 'text-slate-400'}`}>
-                      {customStats ? `Custom Return Frame: ${customStats.start} → ${customStats.end}` : `Total Performance Return Overview (${TIMEFRAMES[timeframe].label})`}
-                   </p>
-                   {customStats && (
-                       <button onClick={clearSelection} className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white border shadow-2xs px-2 py-0.5 rounded-md transition-colors">
-                           ✕ Clear Delta
-                       </button>
-                   )}
-               </div>
 
-               {displayStats.map((stat, idx) => stat && stat.return !== undefined && stat.return !== null && (
-                 <div key={stat.id} className={`flex-1 min-w-[100px] ${idx > 0 ? 'border-l border-slate-100 pl-4' : ''}`}>
-                    <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tight flex items-center gap-1.5 truncate">
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[idx] }}></span>
-                        {stat.name}
-                    </p>
-                    <p className={`text-xl font-bold tracking-tight ${stat.return >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                      {stat.return >= 0 ? '+' : ''}{stat.return.toFixed(2)}%
-                    </p>
-                 </div>
-               ))}
+            {/* Return Stats Header */}
+            <div className={`flex flex-wrap items-center gap-4 border-b pb-4 transition-all ${customStats ? 'border-amber-100 bg-amber-50/40 -mx-5 px-5 -mt-5 pt-5 rounded-t-2xl' : 'border-slate-100'}`}>
+              <div className="w-full flex justify-between items-center">
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${customStats ? 'text-amber-700' : 'text-slate-400'}`}>
+                  {customStats
+                    ? `Custom Return Frame: ${customStats.start} → ${customStats.end}`
+                    : `Total Performance Return Overview (${TIMEFRAMES[timeframe].label})`}
+                </p>
+                {customStats && (
+                  <button onClick={clearSelection} className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white border shadow-2xs px-2 py-0.5 rounded-md transition-colors">
+                    ✕ Clear Delta
+                  </button>
+                )}
+              </div>
+
+              {displayStats.map((stat, idx) => stat && stat.return !== undefined && stat.return !== null && (
+                <div key={stat.id} className={`flex-1 min-w-[100px] ${idx > 0 ? 'border-l border-slate-100 pl-4' : ''}`}>
+                  <p className="text-[10px] font-medium text-slate-400 uppercase tracking-tight flex items-center gap-1.5 truncate">
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: COLORS[idx] }} />
+                    {stat.name}
+                  </p>
+                  <p className={`text-xl font-bold tracking-tight ${stat.return >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {stat.return >= 0 ? '+' : ''}{stat.return.toFixed(2)}%
+                  </p>
+                </div>
+              ))}
             </div>
 
+            {/* Recharts AreaChart */}
             <div className="w-full h-[380px] min-w-0 select-none cursor-crosshair">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart 
-                    data={chartData} 
-                    margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
-                    onMouseDown={handleMouseDown}
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseUp}
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
+                  onMouseDown={handleMouseDown}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={handleMouseUp}
                 >
                   <defs>
                     {selections.map((sel, idx) => (
-                        <linearGradient key={`grad_${idx}`} id={`color_${idx}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={COLORS[idx]} stopOpacity={0.12}/>
-                            <stop offset="95%" stopColor={COLORS[idx]} stopOpacity={0}/>
-                        </linearGradient>
+                      <linearGradient key={`grad_${idx}`} id={`color_${idx}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor={COLORS[idx]} stopOpacity={0.12} />
+                        <stop offset="95%" stopColor={COLORS[idx]} stopOpacity={0} />
+                      </linearGradient>
                     ))}
                   </defs>
+
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f8fafc" />
-                  
-                  <XAxis 
-                    dataKey="name" 
+
+                  <XAxis
+                    dataKey="name"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#94a3b8', fontSize: 10 }}
                     dy={10}
                     interval={Math.max(1, Math.floor(chartData.length / 7))}
                   />
-                  <YAxis 
+                  <YAxis
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#94a3b8', fontSize: 10 }}
                     tickFormatter={(val) => `${val}%`}
                   />
-                  
+
                   {!isSelecting && (
-                    <Tooltip 
+                    <Tooltip
                       cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4' }}
                       content={({ active, payload }) => {
                         if (active && payload && payload.length) {
                           return (
                             <div className="bg-slate-900 text-white p-3.5 rounded-xl shadow-xl border border-slate-800 min-w-[180px] pointer-events-none text-xs">
                               <p className="text-[10px] font-bold text-slate-400 uppercase mb-2 border-b border-slate-800 pb-1.5">
-                                  {payload[0].payload.name}
+                                {payload[0].payload.name}
                               </p>
                               <div className="space-y-2">
-                                  {payload.map((entry, idx) => {
-                                      if (!entry || entry.value === null || entry.value === undefined) return null;
-                                      return (
-                                          <div key={idx} className="flex justify-between items-center gap-4">
-                                              <div className="flex items-center gap-1.5 min-w-0">
-                                                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }}></div>
-                                                  <span className="text-slate-300 truncate max-w-[100px]">
-                                                      {finalStats[idx]?.name || `Series ${idx + 1}`}
-                                                  </span>
-                                              </div>
-                                              <span className={`font-bold ${entry.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                  {entry.value}%
-                                              </span>
-                                          </div>
-                                      );
-                                  })}
+                                {payload.map((entry, idx) => {
+                                  if (!entry || entry.value === null || entry.value === undefined) return null;
+                                  return (
+                                    <div key={idx} className="flex justify-between items-center gap-4">
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }} />
+                                        <span className="text-slate-300 truncate max-w-[100px]">
+                                          {finalStats[idx]?.name || `Series ${idx + 1}`}
+                                        </span>
+                                      </div>
+                                      <span className={`font-bold ${entry.value >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {entry.value}%
+                                      </span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           );
@@ -590,23 +334,20 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                       }}
                     />
                   )}
-                  
-                  {selections.map((sel, idx) => {
-                     const identityKey = `series_${idx}`;
-                     return (
-                       <Area 
-                          key={sel.id}
-                          type="monotone" 
-                          dataKey={identityKey} 
-                          stroke={COLORS[idx]} 
-                          fill={`url(#color_${idx})`} 
-                          strokeWidth={idx === 0 ? 2.5 : 2}
-                          strokeDasharray={idx > 0 ? "4 4" : "0"}
-                          animationDuration={150}
-                          connectNulls={true}
-                       />
-                     );
-                  })}
+
+                  {selections.map((sel, idx) => (
+                    <Area
+                      key={sel.id}
+                      type="monotone"
+                      dataKey={`series_${idx}`}
+                      stroke={COLORS[idx]}
+                      fill={`url(#color_${idx})`}
+                      strokeWidth={idx === 0 ? 2.5 : 2}
+                      strokeDasharray={idx > 0 ? '4 4' : '0'}
+                      animationDuration={150}
+                      connectNulls={true}
+                    />
+                  ))}
 
                   {refAreaLeft && refAreaRight && (
                     <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} fill="#0f172a" fillOpacity={0.07} />
@@ -615,7 +356,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
               </ResponsiveContainer>
             </div>
 
-            {/* --- STRATEGY METRICS & UNDERLYING HOLDINGS LEDGER --- */}
+            {/* Strategy Fundamentals Breakdown */}
             <div className="mt-6 border-t border-slate-100 pt-5 space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Strategy Fundamentals Breakdown
@@ -626,15 +367,15 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                   const isOpen = !!expandedLedger[metrics.id];
 
                   return (
-                    <div 
-                      key={metrics.id} 
+                    <div
+                      key={metrics.id}
                       className="rounded-xl border border-slate-100 bg-slate-50/30 overflow-hidden flex flex-col justify-between transition-all"
                     >
                       {/* Summary Header Card */}
                       <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between gap-4">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }}></span>
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }} />
                             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">Series {idx + 1}</span>
                           </div>
                           <h5 className="text-xs font-bold text-slate-800 truncate" title={metrics.name}>
@@ -659,7 +400,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                             </span>
                           </div>
 
-                          <button 
+                          <button
                             onClick={() => toggleLedger(metrics.id)}
                             className="p-1.5 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100 text-slate-500 transition-colors"
                           >
@@ -672,7 +413,7 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                       {isOpen && (
                         <div className="p-3 bg-slate-50/50 border-t border-slate-100 text-xs animate-in slide-in-from-top-1 duration-150">
                           <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 pb-1 border-b border-slate-200/60">
-                            <Layers size={11}/> Asset Composition Matrix ({metrics.holdings.length})
+                            <Layers size={11} /> Asset Composition Matrix ({metrics.holdings.length})
                           </div>
                           <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
                             {metrics.holdings.map((fund, fIdx) => (
@@ -704,15 +445,15 @@ export default function PerformanceAnalyticsView({ presets = {}, historicalData 
                 })}
               </div>
             </div>
-            
+
           </div>
         ) : (
           <div className="h-[320px] flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-             <TrendingUp size={32} className="text-slate-300 mb-2 animate-pulse" />
-             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Awaiting Valid Series Alignment</p>
-             <p className="text-[11px] text-slate-400 mt-1 text-center max-w-md">
-                Confirm your selected presets contain exact matching ticker codes as saved inside the history tables.
-             </p>
+            <TrendingUp size={32} className="text-slate-300 mb-2 animate-pulse" />
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Awaiting Valid Series Alignment</p>
+            <p className="text-[11px] text-slate-400 mt-1 text-center max-w-md">
+              Confirm your selected presets contain exact matching ticker codes as saved inside the history tables.
+            </p>
           </div>
         )}
       </div>
