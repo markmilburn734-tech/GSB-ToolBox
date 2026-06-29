@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { BookOpen, Plus, DollarSign, TrendingUp, Trash2, ChevronRight, ArrowLeft, Check, X } from './Icons';
-import { resolveRate } from '../constants';
+import { resolveRate, isCash } from '../constants';
 import { GSB } from './Icons';
 
 // Inline SVGs for the new Export/Print actions to ensure they work without modifying your external Icons file
@@ -30,6 +30,8 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
 
     // Single source of truth for Price + Currency Conversion
     const getLivePrice = (isin, targetCurrency) => {
+        // Synthetic cash is valued at par: 1 unit of the displayed currency.
+        if (isCash(isin)) return 1;
         if (!isin || isin === "N/A") return 0;
         let foundAsset = null;
 

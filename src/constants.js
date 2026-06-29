@@ -1225,6 +1225,19 @@ export function resolveRate(base, target, liveRates = {}) {
     return 1;
 }
 
+/**
+ * True when a holding is a synthetic cash line (Ticker/ISIN === "Cash" in the
+ * Portfolios sheet). Such holdings have no market instrument and are valued at
+ * par — 1 unit of the currency they're shown in. Real liquidity FUNDS (e.g.
+ * BlackRock ICS) have proper tickers and are NOT cash by this test, so they
+ * keep their fetched NAV.
+ * @param {unknown} value  - a ticker or ISIN
+ * @returns {boolean}
+ */
+export function isCash(value) {
+    return String(value ?? '').trim().toUpperCase() === 'CASH';
+}
+
 // ─── 3. Currency Symbols ──────────────────────────────────────────────────────
 /** @type {{ [currency: string]: string }} */
 export const CURRENCY_SYMBOLS = {

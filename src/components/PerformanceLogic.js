@@ -36,6 +36,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { isCash } from '../constants';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -495,11 +496,13 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
       portfolio.forEach(asset => {
         const key    = (asset.ticker || '').trim().toUpperCase();
         const weight = parseFloat(asset.target || asset.weight) || 0;
-        const meta   = key ? (pricesData[key] || {}) : {};
+        const cash   = isCash(asset.ticker) || isCash(asset.isin);
+        const meta   = (!cash && key) ? (pricesData[key] || {}) : {};
 
-        const itemTer   = parseFloat(meta.ter)         || 0;
-        const itemVol   = meta.volatility               || 'Average';
-        const itemName  = meta.name || asset.name       || 'Unknown Asset';
+        // Synthetic cash: no instrument → par, zero cost, low risk.
+        const itemTer   = cash ? 0     : (parseFloat(meta.ter) || 0);
+        const itemVol   = cash ? 'Low' : (meta.volatility || 'Average');
+        const itemName  = cash ? (asset.name || 'Cash') : (meta.name || asset.name || 'Unknown Asset');
         const terContrib = parseFloat(((itemTer * weight) / 100).toFixed(4));
 
         totalWeight  += weight;

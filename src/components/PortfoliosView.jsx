@@ -11,7 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { resolveRate } from '../constants';
+import { resolveRate, isCash } from '../constants';
 import { getVolBadgeStyles } from './PerformanceLogic';
 import { Briefcase, Check, X, Percent, Globe, Layers } from 'lucide-react';
 
@@ -77,12 +77,13 @@ export default function PortfoliosView({ presets = {}, pricesData = {}, liveRate
         const regionWeights = {};
 
         const out = holdings.map((h) => {
-            const meta   = findMeta(h);
+            const cash   = isCash(h.ticker) || isCash(h.isin);
+            const meta   = cash ? null : findMeta(h);
             const weight = parseFloat(h.target) || 0;
-            const ter    = meta ? (parseFloat(meta.ter) || 0) : 0;
-            const vol    = meta?.volatility || 'Average';
-            const cls    = meta?.assetClass || (h.isin === 'N/A' ? 'Cash' : 'Other');
-            const region = meta?.region || 'Global';
+            const ter    = cash ? 0      : (meta ? (parseFloat(meta.ter) || 0) : 0);
+            const vol    = cash ? 'Low'  : (meta?.volatility || 'Average');
+            const cls    = cash ? 'Cash' : (meta?.assetClass || (h.isin === 'N/A' ? 'Cash' : 'Other'));
+            const region = cash ? 'Cash' : (meta?.region || 'Global');
 
             total       += weight;
             weightedTer += ter * weight;
@@ -91,16 +92,16 @@ export default function PortfoliosView({ presets = {}, pricesData = {}, liveRate
             regionWeights[region] = (regionWeights[region] || 0) + weight;
 
             return {
-                name:   meta?.name || h.name || 'Unknown Asset',
+                name:   cash ? (h.name || 'Cash') : (meta?.name || h.name || 'Unknown Asset'),
                 ticker: (h.ticker || '').toUpperCase() || '—',
                 isin:   h.isin || 'N/A',
                 weight,
-                price:  displayPrice(meta),
+                price:  cash ? 1 : displayPrice(meta),   // par: 1 unit of the displayed currency
                 ter,
                 vol,
                 cls,
                 region,
-                priced: !!meta,
+                priced: cash ? true : !!meta,
             };
         });
 
