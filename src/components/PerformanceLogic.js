@@ -41,9 +41,10 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 
 export const COLORS = ['#2d0738', '#9966ff', '#00a0f0', '#fc5b3f'];
 
-// Trading-day counts used for annualisation
-const TRADING_DAYS_PER_YEAR   = 252;
-const TRADING_MONTHS_PER_YEAR = 12;
+// Period counts used for annualisation, by data cadence.
+const TRADING_DAYS_PER_YEAR     = 252;
+const TRADING_WEEKS_PER_YEAR    = 52;
+const TRADING_MONTHS_PER_YEAR   = 12;
 
 // ─── Timeframe helpers ───────────────────────────────────────────────────────
 
@@ -68,8 +69,10 @@ export function getVolBadgeStyles(vol) {
 /**
  * Annualized volatility from an array of index values (base-100 normalized).
  * Uses log returns; returns 0 if insufficient data.
+ * @param {number[]} indexValues
+ * @param {number} periodsPerYear  - 252 daily, 52 weekly, 12 monthly
  */
-function computeAnnualizedVolatility(indexValues, isMonthly = false) {
+function computeAnnualizedVolatility(indexValues, periodsPerYear = TRADING_DAYS_PER_YEAR) {
   if (!indexValues || indexValues.length < 3) return 0;
   const logReturns = [];
   for (let i = 1; i < indexValues.length; i++) {
@@ -82,7 +85,6 @@ function computeAnnualizedVolatility(indexValues, isMonthly = false) {
   if (logReturns.length < 2) return 0;
   const mean = logReturns.reduce((s, r) => s + r, 0) / logReturns.length;
   const variance = logReturns.reduce((s, r) => s + (r - mean) ** 2, 0) / (logReturns.length - 1);
-  const periodsPerYear = isMonthly ? TRADING_MONTHS_PER_YEAR : TRADING_DAYS_PER_YEAR;
   return Math.sqrt(variance * periodsPerYear) * 100; // expressed as %
 }
 
@@ -95,13 +97,17 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
 
   // ── Timeframe configuration ────────────────────────────────────────────────
 
+  // NOTE: the 'Monthly_5Y' source sheet actually carries WEEKLY data (~5y of
+  // weekly points), so 5Y uses cadence 'weekly' (periodsPerYear 52) and ~260
+  // points — not monthly/60, which previously showed only ~14 months and
+  // under-annualised volatility by ~2x.
   const TIMEFRAMES = useMemo(() => ({
-    '3m':  { label: '3M',  source: 'Daily_1Y',   points: 63,           isMonthly: false },
-    '6m':  { label: '6M',  source: 'Daily_1Y',   points: 126,          isMonthly: false },
-    'ytd': { label: 'YTD', source: 'Daily_1Y',   points: getYTDDays(), isMonthly: false },
-    '1y':  { label: '1Y',  source: 'Daily_1Y',   points: 252,          isMonthly: false },
-    '3y':  { label: '3Y',  source: 'Daily_1Y',   points: 756,          isMonthly: false },
-    '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 60,           isMonthly: true  },
+    '3m':  { label: '3M',  source: 'Daily_1Y',   points: 63,           periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '6m':  { label: '6M',  source: 'Daily_1Y',   points: 126,          periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    'ytd': { label: 'YTD', source: 'Daily_1Y',   points: getYTDDays(), periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '1y':  { label: '1Y',  source: 'Daily_1Y',   points: 252,          periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '3y':  { label: '3Y',  source: 'Daily_1Y',   points: 756,          periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 260,          periodsPerYear: TRADING_WEEKS_PER_YEAR, cadence: 'weekly' },
   }), []);
 
   const [timeframe, setTimeframe] = useState('1y');
@@ -332,8 +338,8 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     const portfolio = resolvePortfolio(sel);
     if (!portfolio || portfolio.length === 0) return null;
 
-    const { source, points, isMonthly } = timeframeConfig;
-    const periodsPerYear = isMonthly ? TRADING_MONTHS_PER_YEAR : TRADING_DAYS_PER_YEAR;
+    const { source, points } = timeframeConfig;
+    const periodsPerYear = timeframeConfig.periodsPerYear || TRADING_DAYS_PER_YEAR;
 
     // ── 1. Resolve history strings for each holding ────────────────────────
 
@@ -553,17 +559,20 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
 
     const labels = [];
     const now    = new Date();
-    const isDaily = config.source.includes('Daily');
+    const cadence = config.cadence || 'daily';
 
     for (let i = 0; i < actualPointsRendered; i++) {
       const d = new Date(now);
-      if (isDaily) {
-        d.setDate(d.getDate() - Math.floor((actualPointsRendered - 1 - i) * (365 / TRADING_DAYS_PER_YEAR)));
+      const stepsBack = actualPointsRendered - 1 - i;
+      if (cadence === 'daily') {
+        d.setDate(d.getDate() - Math.floor(stepsBack * (365 / TRADING_DAYS_PER_YEAR)));
+      } else if (cadence === 'weekly') {
+        d.setDate(d.getDate() - stepsBack * 7);
       } else {
-        d.setMonth(d.getMonth() - (actualPointsRendered - 1 - i));
+        d.setMonth(d.getMonth() - stepsBack);
       }
       labels.push(
-        isDaily && actualPointsRendered <= 126
+        cadence === 'daily' && actualPointsRendered <= 126
           ? d.toLocaleString('default', { month: 'short', day: 'numeric' })
           : d.toLocaleString('default', { month: 'short', year: '2-digit' })
       );
@@ -614,7 +623,7 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
       const lastIndex = indexValues[indexValues.length - 1] ?? 100;
       const cumReturn = parseFloat((lastIndex - 100).toFixed(2));
       const annualVol = parseFloat(
-        computeAnnualizedVolatility(indexValues, config.isMonthly).toFixed(2)
+        computeAnnualizedVolatility(indexValues, config.periodsPerYear).toFixed(2)
       );
 
       // Weighted TER from structuralMetrics (already computed)

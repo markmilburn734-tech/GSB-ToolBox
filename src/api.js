@@ -108,6 +108,8 @@ function processStocks(rows) {
             ytd:        parseFloat(String(col(row, '% Off High', '% off high') ?? '0')) || 0,
             ter:        parseFloat(String(col(row, 'TER/OCR', 'ter')           ?? '0')) || 0,
             volatility: sanitise(col(row, 'Volatility Index', 'volatility'))   || 'Average',
+            assetClass: sanitise(col(row, 'Class', 'class', 'Asset Class'))     || 'Other',
+            region:     sanitise(col(row, 'Region', 'Region ', 'region'))       || 'Global',
             high_52:    parseFloat(String(col(row, '52W High', '52w high', 'High_52') ?? '0')) || 0,
             low_52:     parseFloat(String(col(row, '52W Low',  '52w low',  'Low_52')  ?? '0')) || 0,
             pct_off_high: parseFloat(String(col(row, '% Off High', '% off high') ?? '0')) || 0,
@@ -187,9 +189,9 @@ function processCurrencies(rows) {
  * Sheet shape: one row per holding, columns
  *   Strategy | Currency | AllocationTier (profile) | <name> | ISIN | Ticker | TargetWeight
  *
- * NOTE: in the current sheet the name column header is literally "Cash GBP"
- * (it holds the holding name, not a cash flag), so it's included as a name
- * candidate below. TargetWeight is mixed format ("99" and "89.50%"), so the
+ * NOTE: the holding-name column header has been "Asset Name" and (previously)
+ * "Cash GBP"; both are included as name candidates below so a rename doesn't
+ * blank the names. TargetWeight is mixed format ("99" and "89.50%"), so the
  * trailing % is stripped before parsing.
  *
  * @param {Record<string,unknown>[]} rows
@@ -205,7 +207,7 @@ function processPortfolios(rows) {
         const profile  = sanitise(col(row, 'AllocationTier', 'Allocation Tier', 'Profile', 'profile', 'Risk Profile'));
         if (!strategy || !currency || !profile) return;
 
-        const name   = sanitise(col(row, 'Name', 'name', 'Holding', 'Fund Name', 'Cash GBP')) || 'Unknown Asset';
+        const name   = sanitise(col(row, 'Asset Name', 'Name', 'name', 'Holding', 'Fund Name', 'Cash GBP')) || 'Unknown Asset';
         const isin    = sanitise(col(row, 'ISIN', 'isin')).toUpperCase() || 'N/A';
         const ticker  = sanitise(col(row, 'Ticker', 'ticker')).toUpperCase();
         const target  = parseFloat(

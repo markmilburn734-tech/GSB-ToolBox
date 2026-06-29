@@ -108,8 +108,9 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                             <GSB className="w-6 h-6 text-white" />
                         </div>
                         <h1 className="text-3xl font-bold text-gray-800 tracking-tight">CGT Estimator</h1>
+                        <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-wider">UK · GBP</span>
                     </div>
-                    <p className="text-gray-500 ml-1">2024/25 Logic • 0.5% Market Volatility Buffer</p>
+                    <p className="text-gray-500 ml-1">2024/25 Logic • 0.5% Market Volatility Buffer • UK rules, figures in GBP</p>
                 </div>
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col min-w-[200px]">
                     <label className="text-xs font-bold uppercase text-gray-400 mb-1 flex items-center gap-1">

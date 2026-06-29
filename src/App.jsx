@@ -17,10 +17,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import RebalancerView           from './components/RebalancerView';
 import MarketPulseView          from './components/MarketPulseView';
 import PerformanceAnalyticsView from './components/PerformanceAnalyticsView';
+import PortfoliosView           from './components/PortfoliosView';
 import TaxCalculatorView        from './components/TaxCalculatorView';
 import IHTCalculatorView        from './components/IHTCalculatorView';
 import { TabButton }            from './components/TabButton';
-import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle } from './components/Icons';
+import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase } from './components/Icons';
  
 import { CURRENCY_SYMBOLS } from './constants';
  
@@ -98,6 +99,12 @@ export default function App() {
         () => selectMarketData(pricesData, activeCurrency),
         [pricesData, activeCurrency],
     );
+
+    // CGT & IHT are UK statutory tools — always GBP, independent of the toggle.
+    const gbpMarketData = useMemo(
+        () => selectMarketData(pricesData, 'GBP'),
+        [pricesData],
+    );
  
     // ── Render ───────────────────────────────────────────────────────────────
     return (
@@ -134,6 +141,12 @@ export default function App() {
                                     onClick={() => setActiveTab('analytics')}
                                     icon={<PieChart size={16} />}
                                     label="Analytics"
+                                />
+                                <TabButton
+                                    active={activeTab === 'portfolios'}
+                                    onClick={() => setActiveTab('portfolios')}
+                                    icon={<Briefcase size={16} />}
+                                    label="Portfolios"
                                 />
                                 <TabButton
                                     active={activeTab === 'tax'}
@@ -227,18 +240,28 @@ export default function App() {
                         currency={activeCurrency}
                     />
                 )}
+                {activeTab === 'portfolios' && (
+                    <PortfoliosView
+                        presets={presets}
+                        pricesData={pricesData}
+                        liveRates={liveRates}
+                        currency={activeCurrency}
+                        symbol={symbol}
+                    />
+                )}
+
                 {activeTab === 'tax' && (
                     <TaxCalculatorView
-                        symbol={symbol}
-                        currency={activeCurrency}
-                        pricesData={marketPulseData}
+                        symbol="£"
+                        currency="GBP"
+                        pricesData={gbpMarketData}
                     />
                 )}
                 {activeTab === 'IHT' && (
                     <IHTCalculatorView
-                        symbol={symbol}
-                        currency={activeCurrency}
-                        pricesData={marketPulseData}
+                        symbol="£"
+                        currency="GBP"
+                        pricesData={gbpMarketData}
                     />
                 )}
             </main>
