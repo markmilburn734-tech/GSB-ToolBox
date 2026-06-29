@@ -181,6 +181,46 @@ function processCurrencies(rows) {
     return liveRates;
 }
  
+/**
+ * Builds the nested presets map from the Portfolios sheet.
+ *
+ * Sheet shape: one row per holding, columns
+ *   Strategy | Currency | AllocationTier (profile) | <name> | ISIN | Ticker | TargetWeight
+ *
+ * NOTE: in the current sheet the name column header is literally "Cash GBP"
+ * (it holds the holding name, not a cash flag), so it's included as a name
+ * candidate below. TargetWeight is mixed format ("99" and "89.50%"), so the
+ * trailing % is stripped before parsing.
+ *
+ * @param {Record<string,unknown>[]} rows
+ * @returns {import('./constants').InitialPresets}
+ */
+function processPortfolios(rows) {
+    /** @type {import('./constants').InitialPresets} */
+    const presets = {};
+
+    rows.forEach((row) => {
+        const strategy = sanitise(col(row, 'Strategy', 'strategy'));
+        const currency = sanitise(col(row, 'Currency', 'currency')).toUpperCase();
+        const profile  = sanitise(col(row, 'AllocationTier', 'Allocation Tier', 'Profile', 'profile', 'Risk Profile'));
+        if (!strategy || !currency || !profile) return;
+
+        const name   = sanitise(col(row, 'Name', 'name', 'Holding', 'Fund Name', 'Cash GBP')) || 'Unknown Asset';
+        const isin    = sanitise(col(row, 'ISIN', 'isin')).toUpperCase() || 'N/A';
+        const ticker  = sanitise(col(row, 'Ticker', 'ticker')).toUpperCase();
+        const target  = parseFloat(
+            String(col(row, 'TargetWeight', 'Target Weight', 'Target', 'target') ?? '').replace('%', '')
+        ) || 0;
+
+        if (!presets[strategy])                       presets[strategy] = {};
+        if (!presets[strategy][currency])             presets[strategy][currency] = {};
+        if (!presets[strategy][currency][profile])    presets[strategy][currency][profile] = [];
+        presets[strategy][currency][profile].push({ name, isin, ticker, target });
+    });
+
+    return presets;
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
  
 /**
@@ -202,10 +242,11 @@ export function fetchPortfolioData(onComplete) {
         GOOGLE_SHEETS_CSV_URLS.DAILY_HIST,
         GOOGLE_SHEETS_CSV_URLS.MONTHLY_HIST,
         GOOGLE_SHEETS_CSV_URLS.CURRENCIES,
+        GOOGLE_SHEETS_CSV_URLS.PORTFOLIOS,
     ];
  
     Promise.allSettled(urls.map((url) => parseSheetPromise(url))).then(
-        ([stocksResult, dailyResult, monthlyResult, currenciesResult]) => {
+        ([stocksResult, dailyResult, monthlyResult, currenciesResult, portfoliosResult]) => {
             /** @type {string[]} */
             const errors = [];
  
@@ -268,17 +309,29 @@ export function fetchPortfolioData(onComplete) {
                 console.warn('[GSB]', msg, '— will use static fallback rates.');
                 errors.push(msg);
             }
- 
+
+            // ── Portfolios (presets) ──────────────────────────────────────────
+            let presets = {};
+            if (portfoliosResult.status === 'fulfilled') {
+                presets = processPortfolios(portfoliosResult.value);
+            } else {
+                const msg = `Portfolios sheet failed: ${portfoliosResult.reason}`;
+                console.error('[GSB]', msg);
+                errors.push(msg);
+            }
+
             console.log(
                 '[GSB] Completed. Tickers with history:',
                 Object.keys(historyMap).length,
+                '| Strategies:',
+                Object.keys(presets).length,
                 '| Errors:',
                 errors.length,
             );
- 
+
             // onComplete is ALWAYS called, even on total failure, so the UI
             // can exit its loading state.
-            onComplete({ newPrices, historyMap, liveRates, errors });
+            onComplete({ newPrices, historyMap, liveRates, presets, errors });
         },
     );
 }

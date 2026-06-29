@@ -22,10 +22,7 @@ import IHTCalculatorView        from './components/IHTCalculatorView';
 import { TabButton }            from './components/TabButton';
 import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle } from './components/Icons';
  
-import {
-    INITIAL_PRESETS,
-    CURRENCY_SYMBOLS,
-} from './constants';
+import { CURRENCY_SYMBOLS } from './constants';
  
 import { fetchPortfolioData } from './api';
  
@@ -61,6 +58,8 @@ export default function App() {
     const [activeCurrency,  setActiveCurrency]  = useState('USD');
     const [pricesData,      setPricesData]      = useState({});
     const [historicalData,  setHistoricalData]  = useState({});
+    /** @type {[import('./constants').InitialPresets, Function]} */
+    const [presets,         setPresets]         = useState({});
     /** @type {[import('./constants').ExchangeRateMap, Function]} */
     const [liveRates,       setLiveRates]       = useState({});
     const [isFetchingData,  setIsFetchingData]  = useState(false);
@@ -73,10 +72,11 @@ export default function App() {
     useEffect(() => {
         setIsFetchingData(true);
  
-        fetchPortfolioData(({ newPrices, historyMap, liveRates: fetchedRates, errors }) => {
+        fetchPortfolioData(({ newPrices, historyMap, liveRates: fetchedRates, presets: fetchedPresets, errors }) => {
             setPricesData(newPrices);
             setHistoricalData(historyMap);
             setLiveRates(fetchedRates);
+            setPresets(fetchedPresets);
             setSyncErrors(errors);
             setIsFetchingData(false);
         });
@@ -84,43 +84,20 @@ export default function App() {
  
     // ── Derived / memoised data slices ────────────────────────────────────────
     //
-    // These memos ensure that RebalancerView and PerformanceAnalyticsView do
-    // not re-execute their heavy calculations when only `activeTab` changes.
+    // Memoised so the currency-keyed slice is only rebuilt when `pricesData`
+    // or `activeCurrency` actually change — not on tab switches.
     //
  
     /**
-     * Flat list of prices for the active currency — used by RebalancerView.
-     * Shape is the same as `pricesData` so the child doesn't need changes.
+     * Currency-keyed price map: { [currency]: { [ticker]: AssetPrice } }.
+     * Consumed by MarketPulseView, TaxCalculatorView and IHTCalculatorView,
+     * all of which look up `data[currency]`.
      */
-    const pricesForCurrency = useMemo(() => {
-        const out = {};
-        Object.entries(pricesData).forEach(([ticker, asset]) => {
-            if (asset.currency === activeCurrency) out[ticker] = asset;
-        });
-        return out;
-    }, [pricesData, activeCurrency]);
  
-    /**
-     * MarketPulseView expects { [currency]: { [ticker]: AssetPrice } }.
-     */
     const marketPulseData = useMemo(
         () => selectMarketData(pricesData, activeCurrency),
         [pricesData, activeCurrency],
     );
- 
-    /**
-     * History slice — same shape as historicalData, but filtered to tickers
-     * that exist in the active currency's price set (avoids passing the entire
-     * history map down to analytics on every render).
-     */
-    const historyForCurrency = useMemo(() => {
-        const relevantTickers = new Set(Object.keys(pricesForCurrency));
-        const out = {};
-        Object.entries(historicalData).forEach(([ticker, hist]) => {
-            if (relevantTickers.has(ticker)) out[ticker] = hist;
-        });
-        return out;
-    }, [historicalData, pricesForCurrency]);
  
     // ── Render ───────────────────────────────────────────────────────────────
     return (
@@ -223,7 +200,7 @@ export default function App() {
             <main className="py-6">
                 {activeTab === 'rebalancer' && (
                     <RebalancerView
-                        presets={INITIAL_PRESETS}
+                        presets={presets}
                         symbol={symbol}
                         currency={activeCurrency}
                         setActiveCurrency={setActiveCurrency}
@@ -242,7 +219,7 @@ export default function App() {
  
                 {activeTab === 'analytics' && (
                     <PerformanceAnalyticsView
-                        presets={INITIAL_PRESETS}
+                        presets={presets}
                         historicalData={historicalData} 
                         symbol={symbol}
                         pricesData={pricesData}         
@@ -251,10 +228,18 @@ export default function App() {
                     />
                 )}
                 {activeTab === 'tax' && (
-                    <TaxCalculatorView symbol={symbol} />
+                    <TaxCalculatorView
+                        symbol={symbol}
+                        currency={activeCurrency}
+                        pricesData={marketPulseData}
+                    />
                 )}
                 {activeTab === 'IHT' && (
-                    <IHTCalculatorView symbol={symbol} />
+                    <IHTCalculatorView
+                        symbol={symbol}
+                        currency={activeCurrency}
+                        pricesData={marketPulseData}
+                    />
                 )}
             </main>
         </div>

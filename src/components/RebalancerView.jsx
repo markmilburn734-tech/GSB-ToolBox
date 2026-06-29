@@ -287,6 +287,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                                 <th className="py-4 px-4 text-right">Unit Price</th>
                                 <th className="py-4 px-4 text-right">Current Units</th>
                                 <th className="py-4 px-4 text-right">Current Value</th>
+                                <th className="py-4 px-4 text-right w-28">Current %</th>
                                 <th className="py-4 px-4 text-center w-32">Target %</th>
                                 <th className="py-4 px-6 w-16 print:hidden"></th>
                             </tr>
@@ -294,6 +295,9 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                         <tbody className="divide-y divide-gray-100 text-sm">
                             {assets.map((asset) => {
                                 const currentValue = (parseFloat(asset.price) || 0) * (parseFloat(asset.units) || 0);
+                                const currentWeight = totalCurrentValue > 0 ? (currentValue / totalCurrentValue) * 100 : 0;
+                                const targetWeight = parseFloat(asset.target) || 0;
+                                const weightDrift = currentWeight - targetWeight;
                                 return (
                                     <tr key={asset.id} className="hover:bg-gray-50/40 transition-colors group">
                                         <td className="py-4 px-6">
@@ -336,6 +340,14 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                                         </td>
                                         <td className="py-4 px-4 text-right font-bold text-gray-800">
                                             {formatCurrency(currentValue)}
+                                        </td>
+                                        <td className="py-4 px-4 text-right">
+                                            <div className="font-semibold text-gray-700">{currentWeight.toFixed(2)}%</div>
+                                            {targetWeight > 0 && (
+                                                <div className={`text-[10px] font-bold ${Math.abs(weightDrift) < 0.1 ? 'text-gray-300' : 'text-brand3'}`}>
+                                                    {weightDrift >= 0 ? '+' : ''}{weightDrift.toFixed(2)} vs tgt
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="py-4 px-4">
                                             <div className="flex items-center justify-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-xl border border-gray-100 print:border-none print:bg-transparent">

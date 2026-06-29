@@ -35,7 +35,7 @@
 //   AssetPrice     : { price, isin, name, currency, ter, volatility, ... }
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 
@@ -125,14 +125,39 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     ...overrides,
   });
 
+  // Starts unconfigured; seeded from the first available sheet preset once
+  // `presets` loads (see effect below). Profile names live in the Portfolios
+  // sheet now, so we don't hard-code one here.
   const [selections, setSelections] = useState([
-    makeEmptySelection({
-      id:       'init-0',
-      strategy: 'World Allocation',
-      currency: 'USD',
-      profile:  'Risk Averse (20/80)',
-    }),
+    makeEmptySelection({ id: 'init-0' }),
   ]);
+
+  // One-time seed of the initial selection from the first preset the sheet
+  // exposes, but only while that selection is still its untouched default —
+  // never clobbers a user's choice, and never re-runs after seeding once.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (seededRef.current) return;
+    const strategies = Object.keys(presets);
+    if (strategies.length === 0) return;        // presets not loaded yet
+    seededRef.current = true;
+
+    setSelections(prev => {
+      if (prev.length !== 1) return prev;
+      const s = prev[0];
+      const untouched =
+        s.type === 'preset' && !s.strategy && !s.assetTicker &&
+        (!s.customPortfolio || s.customPortfolio.length === 0);
+      if (!untouched) return prev;
+
+      const strategy = strategies[0];
+      const currency = Object.keys(presets[strategy] || {})[0] || '';
+      const profile  = currency
+        ? (Object.keys(presets[strategy][currency] || {})[0] || '')
+        : '';
+      return [{ ...s, strategy, currency, profile }];
+    });
+  }, [presets]);
 
   // ── Drag-to-cross-slice state ──────────────────────────────────────────────
 
@@ -367,26 +392,52 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     // We compute a per-period multiplier and apply it cumulatively.
     const perPeriodFeeFactor = Math.pow(1 - blendedTer / 100, 1 / periodsPerYear);
 
-    // ── 4. Compute the gross composite price series ────────────────────────
+    // ── 4. Compute the return-weighted composite index series ──────────────
+    //
+    // Each holding is rebased to its OWN starting price (→ 1.0 at the window
+    // start) BEFORE the target weight is applied. This makes the composite a
+    // return-weighted index — i.e. what the portfolio actually does — instead
+    // of a price-level-weighted sum, which let high-priced funds dominate the
+    // line regardless of their target weight (e.g. a £600 S&P holding swamping
+    // a £1 cash holding at equal weight, inverting a 30/70 into a ~70/30).
+    //
+    // Per asset, the base is its price at the first point of the aligned
+    // trailing window. Each point is then renormalised by the weight actually
+    // present, so a single missing/zero price never introduces an artificial
+    // step in the index.
+
+    const assetBases = parsedHistories.map((history) => {
+      if (!history || history.length === 0) return null;
+      const base = history[history.length - finalPointsCount];
+      return base > 0 ? base : null;
+    });
 
     const rawComposite = new Array(finalPointsCount).fill(null);
 
     for (let p = 0; p < finalPointsCount; p++) {
-      let compositePrice = 0;
-      let hasData        = false;
+      let weightedReturn = 0;   // Σ weightᵢ × (priceᵢ[p] / baseᵢ)
+      let presentWeight  = 0;   // Σ weightᵢ for holdings with data at p
 
       portfolio.forEach((asset, i) => {
         const history = parsedHistories[i];
         if (!history || history.length === 0) return;
+        const base = assetBases[i];
+        if (base == null) return;
+
         const histIdx = history.length - finalPointsCount + p;
         if (histIdx < 0 || histIdx >= history.length) return;
 
-        const weight = parseFloat(asset.target || asset.weight) || 0;
-        compositePrice += history[histIdx] * (weight / 100);
-        hasData = true;
+        const price = history[histIdx];
+        if (!(price > 0)) return;
+
+        const weight = (parseFloat(asset.target || asset.weight) || 0) / 100;
+        weightedReturn += (price / base) * weight;
+        presentWeight  += weight;
       });
 
-      if (hasData) rawComposite[p] = compositePrice;
+      // Renormalise by present weight → index sits at ~1.0 at the base point
+      // and ignores (rather than steps on) any holding missing at this point.
+      if (presentWeight > 0) rawComposite[p] = weightedReturn / presentWeight;
     }
 
     // ── 5. Normalize to base-100 and apply TER drag ────────────────────────

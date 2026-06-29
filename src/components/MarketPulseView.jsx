@@ -17,13 +17,14 @@ export default function MarketPulseView({ data, symbol, currency }) {
   const currencyData = data[currency] || {};
   const tickers      = Object.keys(currencyData);
 
+  // Re-run when the currency changes OR when async-fetched data arrives.
+  // Keep the current selection if it's still valid (e.g. on a data refresh);
+  // otherwise fall back to the first available ticker.
   useEffect(() => {
-    if (tickers.length > 0) {
-      setSelectedTicker(tickers[0]);
-    } else {
-      setSelectedTicker(null);
-    }
-  }, [currency]);
+    setSelectedTicker((prev) =>
+      prev && currencyData[prev] ? prev : (tickers[0] ?? null)
+    );
+  }, [currency, data]);
 
   const activeAsset = currencyData[selectedTicker];
 
