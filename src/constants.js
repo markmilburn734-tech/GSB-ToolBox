@@ -1201,11 +1201,28 @@ export const FALLBACK_EXCHANGE_RATES = Object.freeze({
  */
 export function resolveRate(base, target, liveRates = {}) {
     if (base === target) return 1;
-    return (
-        liveRates?.[base]?.[target] ??
-        FALLBACK_EXCHANGE_RATES[base]?.[target] ??
-        1
-    );
+
+    const pos = (v) => (typeof v === 'number' && v > 0 ? v : null);
+
+    // Preference order:
+    //   1. direct live rate            (e.g. USD→GBP from the sheet)
+    //   2. inverse live rate           (sheet stores only one direction, so
+    //                                   GBP→USD = 1 / (USD→GBP))
+    //   3. direct static fallback
+    //   4. inverse static fallback
+    const directLive   = pos(liveRates?.[base]?.[target]);
+    if (directLive)  return directLive;
+
+    const inverseLive  = pos(liveRates?.[target]?.[base]);
+    if (inverseLive) return 1 / inverseLive;
+
+    const directStatic = pos(FALLBACK_EXCHANGE_RATES[base]?.[target]);
+    if (directStatic) return directStatic;
+
+    const inverseStatic = pos(FALLBACK_EXCHANGE_RATES[target]?.[base]);
+    if (inverseStatic) return 1 / inverseStatic;
+
+    return 1;
 }
 
 // ─── 3. Currency Symbols ──────────────────────────────────────────────────────
