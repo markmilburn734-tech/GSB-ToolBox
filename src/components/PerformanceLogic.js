@@ -89,6 +89,41 @@ function computeAnnualizedVolatility(indexValues, periodsPerYear = TRADING_DAYS_
   return Math.sqrt(variance * periodsPerYear) * 100; // expressed as %
 }
 
+/**
+ * Repairs denomination / split discontinuities in a price series.
+ *
+ * Some source histories contain a single-period ×100-style jump that is a DATA
+ * artifact, not a real move — e.g. Yahoo re-denominates an LSE ETF, so SMEA.L
+ * reads ~£0.55 before Nov-2023 and ~£60+ after. Left alone, the base-100
+ * normaliser anchors on the wrong-scale early segment and reports absurd
+ * returns (+14,000%) and volatility.
+ *
+ * We walk back from the most recent (trusted) value; whenever a single-period
+ * ratio is outside [1/threshold, threshold] we rescale the entire earlier
+ * segment onto the current scale, stitching the series back into one continuous
+ * track. A real fund never moves >3× in one period, so the threshold is safe;
+ * genuine moves are never touched.
+ *
+ * @param {number[]} prices
+ * @param {number} threshold
+ * @returns {number[]}
+ */
+function stitchDiscontinuities(prices, threshold = 3) {
+  if (!prices || prices.length < 2) return prices;
+  const out = prices.slice();
+  for (let i = out.length - 1; i > 0; i--) {
+    const prev = out[i - 1];
+    const curr = out[i];
+    if (prev > 0 && curr > 0) {
+      const ratio = curr / prev;
+      if (ratio > threshold || ratio < 1 / threshold) {
+        for (let j = 0; j < i; j++) if (out[j] > 0) out[j] *= ratio;
+      }
+    }
+  }
+  return out;
+}
+
 // ─── The Hook ─────────────────────────────────────────────────────────────────
 
 /**
@@ -362,7 +397,7 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
         return [];
       }
 
-      return hString.split(';').map(v => parseFloat(v) || 0);
+      return stitchDiscontinuities(hString.split(';').map(v => parseFloat(v) || 0));
     });
 
     if (parsedHistories.every(h => h.length === 0)) return null;
