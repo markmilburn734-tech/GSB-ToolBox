@@ -271,6 +271,7 @@ export default function App() {
 
                 {activeTab === 'pbrebalancer' && (
                     <PrivateBankRebalancerView
+                        presets={presets}
                         pricesData={pricesData}
                         liveRates={liveRates}
                         charges={charges}
