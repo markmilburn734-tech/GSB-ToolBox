@@ -1239,6 +1239,84 @@ export function isCash(value) {
     return String(value ?? '').trim().toUpperCase() === 'CASH';
 }
 
+// ─── Private Bank transaction charges ────────────────────────────────────────
+//
+// Tiered transaction fees by CHF trade size × asset class, per bank. Source:
+// "Private Bank transaction charges.xlsx". `tiers` are CHF upper bounds (the
+// last, Infinity, is the "Over" band); `rates` are fractions of the trade
+// value; `minCHF` is the minimum ticket fee in CHF. The trade value is
+// converted to CHF (live) to pick the tier, and the CHF minimum is converted
+// live to the trade currency.
+//
+// This is the FALLBACK; a published "Charges" sheet tab overrides it at runtime.
+export const PB_CHARGES = Object.freeze({
+    Schroders: {
+        tiers: [50000, 100000, 250000, 500000, Infinity],
+        classes: {
+            'Money Market Funds':          { rates: [0.0045, 0.004, 0.0025, 0.0015, 0.0008], minCHF: 100 },
+            'Bond Funds':                  { rates: [0.009,  0.008, 0.005,  0.003,  0.0015], minCHF: 100 },
+            'Equity Funds':                { rates: [0.015,  0.013, 0.011,  0.009,  0.007 ], minCHF: 200 },
+            'Equities / ETFs':             { rates: [0.015,  0.013, 0.011,  0.009,  0.007 ], minCHF: 200 },
+            'Funds':                       { rates: [0.015,  0.013, 0.011,  0.009,  0.007 ], minCHF: 200 },
+            'Hedge funds/ private assets': { rates: [0.018,  0.015, 0.012,  0.010,  0.008 ], minCHF: 250 },
+        },
+    },
+    Barclays: {
+        tiers: [100000, 250000, 1000000, Infinity],
+        classes: {
+            'Money Market Funds': { rates: [0.003,  0.0025, 0.0015, 0.001 ], minCHF: 100 },
+            'Bond Funds':         { rates: [0.007,  0.005,  0.0035, 0.0025], minCHF: 150 },
+            'Equity Funds':       { rates: [0.0125, 0.010,  0.0075, 0.005 ], minCHF: 150 },
+            'Equities / ETFs':    { rates: [0.015,  0.012,  0.010,  0.008 ], minCHF: 150 },
+            'Funds':              { rates: [0.018,  0.015,  0.012,  0.008 ], minCHF: 200 },
+        },
+    },
+});
+
+/**
+ * Best-effort default fee category for a holding, matching our Stocks `Class`
+ * to one of the bank's available category names (keyword-based, so it adapts to
+ * whatever the Charges sheet calls them).
+ * @param {string} ourClass         e.g. 'Equity' | 'Bond' | 'Cash' | 'Multi-Asset'
+ * @param {string[]} availableClasses category names offered by the selected bank
+ */
+export function mapBankClass(ourClass, availableClasses = []) {
+    const find = (kw) => availableClasses.find((c) => c.toLowerCase().includes(kw));
+    const c = String(ourClass || '').toLowerCase();
+    if (c.includes('cash') || c.includes('money')) return find('money market') || availableClasses[0];
+    if (c.includes('bond') || c.includes('fixed')) return find('bond') || availableClasses[0];
+    if (c.includes('equit'))                       return find('etf') || find('equit') || availableClasses[0];
+    return find('fund') || availableClasses[0];
+}
+
+/**
+ * Computes a private-bank transaction fee for one trade.
+ * fee = max(value × tier-rate, CHF-minimum converted to the trade currency).
+ * @param {number} value      trade value in `currency`
+ * @param {string} currency   trade currency (e.g. 'USD')
+ * @param {string} bankClass  fee category (key of PB_CHARGES[bank].classes)
+ * @param {string} bank       'Schroders' | 'Barclays'
+ * @param {object} liveRates  live exchange-rate map
+ * @param {object} [schedule] override schedule (e.g. parsed from the sheet)
+ * @returns {{ fee:number, rate:number, minFee:number, chf:number, appliedMin:boolean }}
+ */
+export function computeTransactionFee(value, currency, bankClass, bank, liveRates = {}, schedule = PB_CHARGES) {
+    const sched = schedule?.[bank];
+    const cls = sched?.classes?.[bankClass];
+    const v = Math.abs(parseFloat(value) || 0);
+    if (!cls || v <= 0) return { fee: 0, rate: 0, minFee: 0, chf: 0, appliedMin: false };
+
+    const chf = v * resolveRate(currency, 'CHF', liveRates);
+    let tier = sched.tiers.findIndex((t) => chf < t);
+    if (tier === -1) tier = sched.tiers.length - 1;
+
+    const rate   = cls.rates[tier] ?? cls.rates[cls.rates.length - 1];
+    const pctFee = v * rate;
+    const minFee = cls.minCHF * resolveRate('CHF', currency, liveRates);
+    const fee    = Math.max(pctFee, minFee);
+    return { fee, rate, minFee, chf, appliedMin: minFee > pctFee };
+}
+
 // ─── 3. Currency Symbols ──────────────────────────────────────────────────────
 /** @type {{ [currency: string]: string }} */
 export const CURRENCY_SYMBOLS = {
@@ -1255,4 +1333,5 @@ export const GOOGLE_SHEETS_CSV_URLS = Object.freeze({
     MONTHLY_HIST:"https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=755116259&single=true&output=csv",
     CURRENCIES:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=161616036&single=true&output=csv",
     PORTFOLIOS:  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=1724094727&single=true&output=csv",
+    CHARGES:     "https://docs.google.com/spreadsheets/d/e/2PACX-1vT2K_7b79oThGmtNyB6y1Flz_o6_I9k5BMq2nIc-ARgZ7qi0FpTjaaycaDv4pNX7BtkmexcvaicQE1M/pub?gid=1211950497&single=true&output=csv",
 });

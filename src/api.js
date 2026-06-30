@@ -72,6 +72,7 @@ function parseSheetPromise(url) {
         Papa.parse(url, {
             download:      true,
             header:        true,
+            transformHeader: (h) => (h || '').trim(),   // sheets sometimes pad headers with spaces
             dynamicTyping: true,
             skipEmptyLines: true,
             complete: ({ data }) => resolve(data),
@@ -227,6 +228,48 @@ function processPortfolios(rows) {
     return presets;
 }
 
+/**
+ * Parses the wide-format Charges tab into the PB_CHARGES shape:
+ *   { [bank]: { tiers: number[], classes: { [type]: { rates: number[], minCHF } } } }
+ * Each row: Bank | Asset Type | Currency | Charge Minimum | (Tier, Percent) × 5.
+ * Tier strings like "<50000" → upper bound 50000; ">500000" → Infinity (top band).
+ * @param {Record<string,unknown>[]} rows
+ * @returns {object|null}
+ */
+function processCharges(rows) {
+    const banks = {};
+    const tierCols = [
+        ['1st Tier', 'Percent 1'], ['2nd Tier', 'Percent 2'], ['3rd Tier', 'Percent 3'],
+        ['4th Tier', 'Percent 4'], ['5th Tier', 'Percent 5'],
+    ];
+
+    rows.forEach((row) => {
+        const bank = sanitise(col(row, 'Bank', 'bank')).replace(/['’]/g, '');     // "Schroders","Barclays"
+        const cls  = sanitise(col(row, 'Asset Type', 'AssetClass', 'Class'));
+        if (!bank || !cls) return;
+
+        const minCHF = parseFloat(String(col(row, 'Charge Minimum', 'MinTicketCHF', 'Min') ?? '').replace(/[^0-9.]/g, '')) || 0;
+
+        const pairs = [];
+        tierCols.forEach(([tk, pk]) => {
+            const tRaw = sanitise(col(row, tk));
+            const pRaw = sanitise(col(row, pk));
+            if (!tRaw || !pRaw) return;
+            const upper = tRaw.includes('>') ? Infinity : (parseFloat(tRaw.replace(/[^0-9.]/g, '')) || Infinity);
+            let rate = parseFloat(pRaw.replace('%', '')) || 0;
+            if (pRaw.includes('%')) rate = rate / 100;
+            pairs.push({ upper, rate });
+        });
+        if (!pairs.length) return;
+        pairs.sort((a, b) => a.upper - b.upper);
+
+        if (!banks[bank]) banks[bank] = { tiers: pairs.map((p) => p.upper), classes: {} };
+        banks[bank].classes[cls] = { rates: pairs.map((p) => p.rate), minCHF };
+    });
+
+    return Object.keys(banks).length ? banks : null;
+}
+
 // ─── Public API ───────────────────────────────────────────────────────────────
  
 /**
@@ -249,10 +292,11 @@ export function fetchPortfolioData(onComplete) {
         GOOGLE_SHEETS_CSV_URLS.MONTHLY_HIST,
         GOOGLE_SHEETS_CSV_URLS.CURRENCIES,
         GOOGLE_SHEETS_CSV_URLS.PORTFOLIOS,
+        GOOGLE_SHEETS_CSV_URLS.CHARGES,
     ];
  
     Promise.allSettled(urls.map((url) => parseSheetPromise(url))).then(
-        ([stocksResult, dailyResult, monthlyResult, currenciesResult, portfoliosResult]) => {
+        ([stocksResult, dailyResult, monthlyResult, currenciesResult, portfoliosResult, chargesResult]) => {
             /** @type {string[]} */
             const errors = [];
  
@@ -326,6 +370,16 @@ export function fetchPortfolioData(onComplete) {
                 errors.push(msg);
             }
 
+            // ── Charges (private-bank fee schedules) ──────────────────────────
+            let charges = null;
+            if (chargesResult.status === 'fulfilled') {
+                charges = processCharges(chargesResult.value);
+            } else {
+                const msg = `Charges sheet failed: ${chargesResult.reason}`;
+                console.warn('[GSB]', msg, '— will use built-in fallback schedule.');
+                errors.push(msg);
+            }
+
             console.log(
                 '[GSB] Completed. Tickers with history:',
                 Object.keys(historyMap).length,
@@ -337,7 +391,7 @@ export function fetchPortfolioData(onComplete) {
 
             // onComplete is ALWAYS called, even on total failure, so the UI
             // can exit its loading state.
-            onComplete({ newPrices, historyMap, liveRates, presets, errors });
+            onComplete({ newPrices, historyMap, liveRates, presets, charges, errors });
         },
     );
 }

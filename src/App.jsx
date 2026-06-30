@@ -14,7 +14,8 @@
  
 import React, { useState, useEffect, useMemo } from 'react';
  
-import RebalancerView           from './components/RebalancerView';
+import RebalancerView            from './components/RebalancerView';
+import PrivateBankRebalancerView from './components/PrivateBankRebalancerView';
 import MarketPulseView          from './components/MarketPulseView';
 import PerformanceAnalyticsView from './components/PerformanceAnalyticsView';
 import PortfoliosView           from './components/PortfoliosView';
@@ -62,6 +63,7 @@ export default function App() {
     const [historicalData,  setHistoricalData]  = useState({});
     /** @type {[import('./constants').InitialPresets, Function]} */
     const [presets,         setPresets]         = useState({});
+    const [charges,         setCharges]         = useState(null);
     /** @type {[import('./constants').ExchangeRateMap, Function]} */
     const [liveRates,       setLiveRates]       = useState({});
     const [isFetchingData,  setIsFetchingData]  = useState(false);
@@ -75,7 +77,9 @@ export default function App() {
     // Calculators groups expose sub-tabs and each remembers its last sub-tab.
     const [lastAnalyticsTab, setLastAnalyticsTab] = useState('analytics');
     const [lastCalcTab,      setLastCalcTab]      = useState('tax');
+    const [lastRebalTab,     setLastRebalTab]     = useState('rebalancer');
 
+    const REBAL_TABS     = ['rebalancer', 'pbrebalancer'];
     const ANALYTICS_TABS = ['analytics', 'portfolios', 'market'];
     const CALC_TABS      = ['tax', 'IHT', 'cashcal'];
     const activeGroup =
@@ -85,11 +89,16 @@ export default function App() {
 
     const goTo = (tab) => {
         setActiveTab(tab);
+        if (REBAL_TABS.includes(tab))     setLastRebalTab(tab);
         if (ANALYTICS_TABS.includes(tab)) setLastAnalyticsTab(tab);
         if (CALC_TABS.includes(tab))      setLastCalcTab(tab);
     };
 
     const SUBTABS = {
+        rebalancer: [
+            { id: 'rebalancer',   label: 'Standard',     icon: <RefreshCw size={14} /> },
+            { id: 'pbrebalancer', label: 'Private Bank', icon: <Briefcase size={14} /> },
+        ],
         analytics: [
             { id: 'analytics',  label: 'Analytics',  icon: <PieChart size={14} /> },
             { id: 'portfolios', label: 'Portfolios', icon: <Briefcase size={14} /> },
@@ -106,11 +115,12 @@ export default function App() {
     useEffect(() => {
         setIsFetchingData(true);
  
-        fetchPortfolioData(({ newPrices, historyMap, liveRates: fetchedRates, presets: fetchedPresets, errors }) => {
+        fetchPortfolioData(({ newPrices, historyMap, liveRates: fetchedRates, presets: fetchedPresets, charges: fetchedCharges, errors }) => {
             setPricesData(newPrices);
             setHistoricalData(historyMap);
             setLiveRates(fetchedRates);
             setPresets(fetchedPresets);
+            setCharges(fetchedCharges);
             setSyncErrors(errors);
             setIsFetchingData(false);
         });
@@ -159,7 +169,7 @@ export default function App() {
                             <div className="flex h-full gap-4">
                                 <TabButton
                                     active={activeGroup === 'rebalancer'}
-                                    onClick={() => setActiveTab('rebalancer')}
+                                    onClick={() => goTo(lastRebalTab)}
                                     icon={<RefreshCw size={16} />}
                                     label="Rebalancer"
                                 />
@@ -211,7 +221,7 @@ export default function App() {
             </nav>
 
             {/* ── Sub-tab bar (Analytics / Calculators groups) ───────────── */}
-            {(activeGroup === 'analytics' || activeGroup === 'calculators') && (
+            {(activeGroup === 'rebalancer' || activeGroup === 'analytics' || activeGroup === 'calculators') && (
                 <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 flex items-center gap-1 h-12">
                         {SUBTABS[activeGroup].map((st) => (
@@ -258,6 +268,15 @@ export default function App() {
                         liveRates={liveRates}
                     />
                 </div>
+
+                {activeTab === 'pbrebalancer' && (
+                    <PrivateBankRebalancerView
+                        pricesData={pricesData}
+                        liveRates={liveRates}
+                        charges={charges}
+                        currency={activeCurrency}
+                    />
+                )}
  
                 {activeTab === 'market' && (
                     <MarketPulseView
