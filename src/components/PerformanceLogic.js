@@ -29,7 +29,7 @@
 //
 // DATA SHAPE CONTRACT (unchanged from v3):
 //   pricesData     : { [ticker]: AssetPrice }
-//   historicalData : { [ticker]: { Daily_1Y?: string; Monthly_5Y?: string } }
+//   historicalData : { [ticker]: { Daily_1Y?: {dates,prices}; Monthly_5Y?: {dates,prices} } }
 //   presets        : { [strategyName]: { [currency]: { [profileName]: PortfolioRow[] } } }
 //   PortfolioRow   : { ticker?, isin?, name?, target?, weight? }
 //   AssetPrice     : { price, isin, name, currency, ter, volatility, ... }
@@ -122,6 +122,97 @@ function stitchDiscontinuities(prices, threshold = 3) {
     }
   }
   return out;
+}
+
+// ─── Date-axis helpers ───────────────────────────────────────────────────────
+
+/**
+ * Window start timestamp for a timeframe, anchored to the data's end date.
+ * YTD anchors to 1 Jan of the end date's year; the rest step back by period.
+ * @param {number} endMs
+ * @param {string} key  - '3m'|'6m'|'ytd'|'1y'|'3y'|'5y'
+ * @returns {number}
+ */
+function windowStartMs(endMs, key) {
+  const d = new Date(endMs);
+  switch (key) {
+    case 'ytd': return new Date(d.getFullYear(), 0, 1).getTime();
+    case '3m':  d.setMonth(d.getMonth() - 3);      return d.getTime();
+    case '6m':  d.setMonth(d.getMonth() - 6);      return d.getTime();
+    case '3y':  d.setFullYear(d.getFullYear() - 3); return d.getTime();
+    case '5y':  d.setFullYear(d.getFullYear() - 5); return d.getTime();
+    case '1y':
+    default:    d.setFullYear(d.getFullYear() - 1); return d.getTime();
+  }
+}
+
+/**
+ * Forward-filled price as of timestamp `t`: last price whose date <= t.
+ * `dates` ascending. Returns null if t precedes the holding's first date.
+ */
+function priceAsOf(dates, prices, t) {
+  let val = null;
+  for (let i = 0; i < dates.length; i++) {
+    if (dates[i] <= t) val = prices[i];
+    else break;
+  }
+  return (val != null && val > 0) ? val : null;
+}
+
+/**
+ * Builds a base-100 index for one selection across a SHARED date axis. Each
+ * holding is rebased to its own price as of `startMs` (so the composite is
+ * return-weighted), forward-filled per axis date, then renormalised by the
+ * weight actually present.
+ *
+ * NOTE: no TER drag is applied. Fund NAV / ETF price is already struck net of
+ * the fund's ongoing charge, so the series is inherently net of fund fees —
+ * re-applying TER would double-count it. Blended TER is surfaced separately as
+ * an informational "net cost" badge only.
+ *
+ * @param {{ holdings: Array<{dates:number[],prices:number[],weight:number}> }} inputs
+ * @param {number[]} axis     - ascending timestamps (the shared x-axis)
+ * @param {number} startMs    - window start (base date for rebasing)
+ * @returns {Array<{index:number,pctReturn:number,raw:number}|null>}
+ */
+function computeNetIndex(inputs, axis, startMs) {
+  const { holdings } = inputs;
+
+  // Base price per holding = price as of the window start; if the holding
+  // starts mid-window, fall back to its first in-window price.
+  const bases = holdings.map((h) => {
+    let b = priceAsOf(h.dates, h.prices, startMs);
+    if (b == null) {
+      for (let i = 0; i < h.dates.length; i++) {
+        if (h.dates[i] >= startMs && h.prices[i] > 0) { b = h.prices[i]; break; }
+      }
+    }
+    return (b != null && b > 0) ? b : null;
+  });
+
+  // Per-holding pointer for an amortised forward-fill walk across the axis.
+  const ptr = holdings.map(() => 0);
+
+  return axis.map((t) => {
+    let acc = 0;
+    let presentWeight = 0;
+    holdings.forEach((h, i) => {
+      const base = bases[i];
+      if (base == null || h.dates.length === 0) return;
+      while (ptr[i] + 1 < h.dates.length && h.dates[ptr[i] + 1] <= t) ptr[i]++;
+      if (h.dates[ptr[i]] > t) return;        // axis date precedes this holding
+      const price = h.prices[ptr[i]];
+      if (!(price > 0)) return;
+      const w = (h.weight || 0) / 100;
+      acc += (price / base) * w;
+      presentWeight += w;
+    });
+    if (presentWeight <= 0) return null;
+
+    const composite = acc / presentWeight;     // ~1.0 at the base date
+    const index = parseFloat((composite * 100).toFixed(4));
+    return { index, pctReturn: parseFloat((index - 100).toFixed(4)), raw: composite };
+  });
 }
 
 // ─── The Hook ─────────────────────────────────────────────────────────────────
@@ -360,157 +451,55 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
   // ══════════════════════════════════════════════════════════════════════════
 
   /**
-   * Builds a base-100 normalized index series for a selection over a given
-   * timeframe configuration, with compounded TER drag applied per point.
+   * Resolves a selection into the inputs the date-axis engine needs:
+   *   holdings   : per priced holding → { dates, prices (stitched), weight }
+   *   blendedTer : weight-average TER (synthetic cash = 0) for the fee drag
    *
-   * Returns an array of { index: number, pctReturn: number, raw: number }
-   * or null if the selection is incomplete / has no data.
-   *
-   *   index      : normalized level (100 = flat; e.g. 112.4 = +12.4%)
-   *   pctReturn  : index − 100  (for display and stats)
-   *   raw        : underlying weighted price sum (for cross-slice delta maths)
+   * Cash and unresolved holdings carry no price series (flat / unknown) but
+   * still count toward the TER blend's total weight. Returns null if the
+   * selection is incomplete or nothing can be priced.
    */
-  const calculateSeries = useCallback((sel, timeframeConfig) => {
+  const resolveSeriesInputs = useCallback((sel, source) => {
     const portfolio = resolvePortfolio(sel);
     if (!portfolio || portfolio.length === 0) return null;
 
-    const { source, points } = timeframeConfig;
-    const periodsPerYear = timeframeConfig.periodsPerYear || TRADING_DAYS_PER_YEAR;
+    const holdings = [];
+    let weightedTer = 0;
+    let totalWeight = 0;
 
-    // ── 1. Resolve history strings for each holding ────────────────────────
-
-    const parsedHistories = portfolio.map(asset => {
+    portfolio.forEach(asset => {
       const rawTicker = (asset.ticker || '').trim().toUpperCase();
       const rawIsin   = (asset.isin   || '').trim().toUpperCase();
+      const weight    = parseFloat(asset.target || asset.weight) || 0;
+      totalWeight += weight;
 
-      if (rawTicker === 'N/A' || (!rawTicker && !rawIsin)) return [];
+      // TER blend (synthetic cash contributes 0 cost).
+      const cash = isCash(asset.ticker) || isCash(asset.isin);
+      const meta = (!cash && rawTicker) ? (pricesData[rawTicker] || {}) : {};
+      weightedTer += (cash ? 0 : (parseFloat(meta.ter) || 0)) * weight;
+
+      if (cash || rawTicker === 'N/A' || (!rawTicker && !rawIsin)) return;
 
       const dataKey = Object.keys(historicalData).find(k => {
         const u = k.trim().toUpperCase();
         return u === rawTicker || u === rawIsin;
       });
-
-      const hString = dataKey ? historicalData[dataKey]?.[source] : null;
-
-      if (!hString || hString === 'N/A') {
+      const series = dataKey ? historicalData[dataKey]?.[source] : null;
+      if (!series || !series.prices || series.prices.length === 0) {
         console.warn(`[GSB Analytics] No "${source}" history for: ${rawTicker || rawIsin}`);
-        return [];
+        return;
       }
 
-      return stitchDiscontinuities(hString.split(';').map(v => parseFloat(v) || 0));
+      const prices = stitchDiscontinuities(series.prices.map(v => parseFloat(v) || 0));
+      const dates  = series.dates || [];
+      if (dates.length !== prices.length) return;   // need aligned date stamps
+
+      holdings.push({ dates, prices, weight });
     });
 
-    if (parsedHistories.every(h => h.length === 0)) return null;
-
-    // ── 2. Align all histories to the same trailing window ─────────────────
-
-    let maxAvailablePoints = points;
-    parsedHistories.forEach(h => {
-      if (h.length > 0 && h.length < maxAvailablePoints) {
-        maxAvailablePoints = h.length;
-      }
-    });
-    const finalPointsCount = Math.max(1, maxAvailablePoints);
-
-    // ── 3. Compute weighted average TER for this portfolio ─────────────────
-    //
-    // TER is looked up from pricesData (flat map). For each holding, the
-    // contribution is ter * (weight / 100).
-
-    let weightedTer = 0;
-    let totalWeight = 0;
-    portfolio.forEach(asset => {
-      const key    = (asset.ticker || '').trim().toUpperCase();
-      const meta   = key ? (pricesData[key] || {}) : {};
-      const ter    = parseFloat(meta.ter) || 0;
-      const weight = parseFloat(asset.target || asset.weight) || 0;
-      weightedTer += ter * weight;
-      totalWeight += weight;
-    });
+    if (holdings.length === 0) return null;
     const blendedTer = totalWeight > 0 ? weightedTer / totalWeight : 0;
-
-    // Daily/monthly compounded fee drag factor:
-    //   netIndex[p] = grossIndex[p] × (1 − TER/100)^(p/periodsPerYear)
-    // We compute a per-period multiplier and apply it cumulatively.
-    const perPeriodFeeFactor = Math.pow(1 - blendedTer / 100, 1 / periodsPerYear);
-
-    // ── 4. Compute the return-weighted composite index series ──────────────
-    //
-    // Each holding is rebased to its OWN starting price (→ 1.0 at the window
-    // start) BEFORE the target weight is applied. This makes the composite a
-    // return-weighted index — i.e. what the portfolio actually does — instead
-    // of a price-level-weighted sum, which let high-priced funds dominate the
-    // line regardless of their target weight (e.g. a £600 S&P holding swamping
-    // a £1 cash holding at equal weight, inverting a 30/70 into a ~70/30).
-    //
-    // Per asset, the base is its price at the first point of the aligned
-    // trailing window. Each point is then renormalised by the weight actually
-    // present, so a single missing/zero price never introduces an artificial
-    // step in the index.
-
-    const assetBases = parsedHistories.map((history) => {
-      if (!history || history.length === 0) return null;
-      const base = history[history.length - finalPointsCount];
-      return base > 0 ? base : null;
-    });
-
-    const rawComposite = new Array(finalPointsCount).fill(null);
-
-    for (let p = 0; p < finalPointsCount; p++) {
-      let weightedReturn = 0;   // Σ weightᵢ × (priceᵢ[p] / baseᵢ)
-      let presentWeight  = 0;   // Σ weightᵢ for holdings with data at p
-
-      portfolio.forEach((asset, i) => {
-        const history = parsedHistories[i];
-        if (!history || history.length === 0) return;
-        const base = assetBases[i];
-        if (base == null) return;
-
-        const histIdx = history.length - finalPointsCount + p;
-        if (histIdx < 0 || histIdx >= history.length) return;
-
-        const price = history[histIdx];
-        if (!(price > 0)) return;
-
-        const weight = (parseFloat(asset.target || asset.weight) || 0) / 100;
-        weightedReturn += (price / base) * weight;
-        presentWeight  += weight;
-      });
-
-      // Renormalise by present weight → index sits at ~1.0 at the base point
-      // and ignores (rather than steps on) any holding missing at this point.
-      if (presentWeight > 0) rawComposite[p] = weightedReturn / presentWeight;
-    }
-
-    // ── 5. Normalize to base-100 and apply TER drag ────────────────────────
-
-    // Find the first non-null composite value as the base
-    const baseIdx = rawComposite.findIndex(v => v !== null && v > 0);
-    if (baseIdx === -1) return null;
-    const basePrice = rawComposite[baseIdx];
-
-    const alignedData = [];
-    let feeCumulativeMultiplier = Math.pow(perPeriodFeeFactor, 0); // starts at 1.0
-
-    for (let p = 0; p < finalPointsCount; p++) {
-      const raw = rawComposite[p];
-      if (raw === null) {
-        alignedData.push(null);
-        // still advance the fee clock even on data gaps
-        feeCumulativeMultiplier *= perPeriodFeeFactor;
-        continue;
-      }
-
-      const grossIndex = (raw / basePrice) * 100;
-      const netIndex   = parseFloat((grossIndex * feeCumulativeMultiplier).toFixed(4));
-      const pctReturn  = parseFloat((netIndex - 100).toFixed(4));
-
-      alignedData.push({ index: netIndex, pctReturn, raw });
-
-      feeCumulativeMultiplier *= perPeriodFeeFactor;
-    }
-
-    return alignedData;
+    return { holdings, blendedTer };
   }, [historicalData, pricesData, resolvePortfolio]);
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -585,57 +574,54 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
   // ══════════════════════════════════════════════════════════════════════════
 
   const chartData = useMemo(() => {
-    const config        = TIMEFRAMES[timeframe];
-    const seriesResults = selections.map(sel => calculateSeries(sel, config));
+    const config = TIMEFRAMES[timeframe];
+    const { source, cadence } = config;
 
-    const validLengths         = seriesResults.filter(s => s !== null).map(s => s.length);
-    const actualPointsRendered = validLengths.length > 0
-      ? Math.max(...validLengths)
-      : config.points;
+    // 1. Resolve inputs (priced holdings + blended TER) for each selection.
+    const inputs = selections.map(sel => resolveSeriesInputs(sel, source));
 
-    // ── Generate date labels ────────────────────────────────────────────────
+    // 2. Global end timestamp = latest dated point across every holding.
+    let endMs = -Infinity;
+    inputs.forEach(inp => inp?.holdings.forEach(h => {
+      if (h.dates.length) endMs = Math.max(endMs, h.dates[h.dates.length - 1]);
+    }));
+    if (!isFinite(endMs)) return [];
 
-    const labels = [];
-    const now    = new Date();
-    const cadence = config.cadence || 'daily';
+    const startMs = windowStartMs(endMs, timeframe);
 
-    for (let i = 0; i < actualPointsRendered; i++) {
-      const d = new Date(now);
-      const stepsBack = actualPointsRendered - 1 - i;
-      if (cadence === 'daily') {
-        d.setDate(d.getDate() - Math.floor(stepsBack * (365 / TRADING_DAYS_PER_YEAR)));
-      } else if (cadence === 'weekly') {
-        d.setDate(d.getDate() - stepsBack * 7);
-      } else {
-        d.setMonth(d.getMonth() - stepsBack);
+    // 3. Shared date axis: union of all holdings' real dates within the window.
+    const axisSet = new Set();
+    inputs.forEach(inp => inp?.holdings.forEach(h => {
+      for (let i = 0; i < h.dates.length; i++) {
+        const t = h.dates[i];
+        if (t >= startMs && t <= endMs) axisSet.add(t);
       }
-      labels.push(
-        cadence === 'daily' && actualPointsRendered <= 126
+    }));
+    const axis = Array.from(axisSet).sort((a, b) => a - b);
+    if (axis.length < 2) return [];
+
+    // 4. Compute each selection's net-of-fees index on the shared axis.
+    const seriesResults = inputs.map(inp => (inp ? computeNetIndex(inp, axis, startMs) : null));
+
+    // 5. Assemble chart points with REAL date labels.
+    //    series_N : net-of-fee index (base 100) · pct_N : % return · raw_N : composite (cross-slice)
+    const dayLabels = cadence === 'daily' && axis.length <= 130;
+    return axis.map((t, i) => {
+      const d = new Date(t);
+      const point = {
+        name: dayLabels
           ? d.toLocaleString('default', { month: 'short', day: 'numeric' })
-          : d.toLocaleString('default', { month: 'short', year: '2-digit' })
-      );
-    }
-
-    // ── Assemble per-point chart objects ────────────────────────────────────
-    // Each point stores:
-    //   series_N    : net-of-fee index value (base 100)
-    //   pct_N       : percentage return (index − 100) for tooltip
-    //   raw_N       : raw composite price (for cross-slice delta)
-
-    const data = [];
-    for (let i = 0; i < actualPointsRendered; i++) {
-      const point = { name: labels[i] };
+          : d.toLocaleString('default', { month: 'short', year: '2-digit' }),
+      };
       selections.forEach((sel, idx) => {
         const dp = seriesResults[idx]?.[i] ?? null;
-        point[`series_${idx}`] = dp !== null ? dp.index     : null;
-        point[`pct_${idx}`]    = dp !== null ? dp.pctReturn : null;
-        point[`raw_${idx}`]    = dp !== null ? dp.raw       : null;
+        point[`series_${idx}`] = dp ? dp.index     : null;
+        point[`pct_${idx}`]    = dp ? dp.pctReturn : null;
+        point[`raw_${idx}`]    = dp ? dp.raw       : null;
       });
-      data.push(point);
-    }
-
-    return data;
-  }, [selections, timeframe, historicalData, pricesData, TIMEFRAMES, calculateSeries]);
+      return point;
+    });
+  }, [selections, timeframe, historicalData, pricesData, TIMEFRAMES, resolveSeriesInputs]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // SERIES SUMMARY STATS  —  FE Analytics status badges

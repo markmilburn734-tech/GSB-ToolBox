@@ -39,7 +39,8 @@
 
 /**
  * @typedef {{ [ticker: string]: AssetPrice }} PricesData
- * @typedef {{ Daily_1Y?: string; Monthly_5Y?: string }} TickerHistory
+ * @typedef {{ dates: number[]; prices: number[] }} HistorySeries  - parallel arrays, dates = epoch ms
+ * @typedef {{ Daily_1Y?: HistorySeries; Monthly_5Y?: HistorySeries }} TickerHistory
  * @typedef {{ [ticker: string]: TickerHistory }} HistoryMap
  */
 

@@ -121,11 +121,12 @@ function processStocks(rows) {
 }
  
 /**
- * Groups and sorts history rows by ticker, then serialises prices as
- * a semicolon-delimited string (preserves existing consumer contract).
+ * Groups history rows by ticker and returns chronological parallel
+ * `dates` (epoch ms) and `prices` arrays per ticker, so the analytics layer
+ * can align series by true date rather than by array position.
  * @param {Record<string,unknown>[]} rows
  * @param {string} historyKey  - e.g. 'Daily_1Y' or 'Monthly_5Y'
- * @returns {{ [ticker: string]: { [historyKey: string]: string } }}
+ * @returns {{ [ticker: string]: { [historyKey: string]: { dates: number[]; prices: number[] } } }}
  */
 function processHistory(rows, historyKey) {
     /** @type {{ [ticker: string]: Array<{ date: Date; price: number }> }} */
@@ -140,19 +141,22 @@ function processHistory(rows, historyKey) {
         if (isNaN(price)) return;
  
         const dateRaw = sanitise(col(row, 'Date', 'date', 'Timestamp'));
-        const date = new Date(dateRaw);
+        const t = new Date(dateRaw).getTime();   // epoch ms (NaN if unparseable)
  
         if (!grouped[ticker]) grouped[ticker] = [];
-        grouped[ticker].push({ date, price });
+        grouped[ticker].push({ t, price });
     });
  
     /** @type {{ [ticker: string]: { [key: string]: string } }} */
     const result = {};
  
     Object.entries(grouped).forEach(([ticker, entries]) => {
-        entries.sort((a, b) => a.date - b.date);
+        entries.sort((a, b) => (a.t || 0) - (b.t || 0));
         result[ticker] = {
-            [historyKey]: entries.map((e) => e.price).join(';'),
+            [historyKey]: {
+                dates:  entries.map((e) => e.t),
+                prices: entries.map((e) => e.price),
+            },
         };
     });
  
