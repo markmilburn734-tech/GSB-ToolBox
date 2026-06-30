@@ -1,192 +1,387 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CashCalView.jsx — "will it last?" cash-flow / longevity projection.
+// CashCalView.jsx — multi-asset cash-flow / longevity planner.
 //
-// Models a pot forward on assumptions: expected return, inflation, contributions
-// while working, then inflation-linked spending (net of other income) through to
-// life expectancy. Surfaces whether the money lasts, and projects nominal vs
-// real (today's-money) value year by year.
+//   • Assets list with category quick-add (House, SIPP, ISA, Loan…), each with
+//     its own freely-editable growth/return rate.
+//   • Drag-and-drop Events timeline: drag Retirement / State Pension /
+//     Inheritance / Lump Expense / Forecast End onto an age track.
+//   • Stacked bar projection — one colour per asset — showing growth then
+//     drawdown to the forecast-end age.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { DollarSign } from './Icons';
+import { DollarSign, Plus, Trash2, X } from './Icons';
 
-function NumberField({ label, hint, value, onChange, prefix, suffix, step = 1 }) {
-  return (
-    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
-      <label className="block text-xs font-bold text-gray-500 mb-1.5">{label}</label>
-      <div className="relative">
-        {prefix && <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">{prefix}</span>}
-        <input
-          type="number"
-          step={step}
-          value={value}
-          onChange={(e) => onChange(e.target.value === '' ? '' : parseFloat(e.target.value))}
-          className={`w-full ${prefix ? 'pl-7' : 'pl-3'} ${suffix ? 'pr-8' : 'pr-3'} py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-mono font-semibold outline-none focus:border-brand`}
-        />
-        {suffix && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-xs">{suffix}</span>}
-      </div>
-      {hint && <p className="text-[10px] text-gray-400 mt-1">{hint}</p>}
-    </div>
-  );
-}
+const COLORS = ['#2d0738', '#9966ff', '#00a0f0', '#fc5b3f', '#10b981', '#f59e0b', '#ec4899', '#64748b', '#0ea5e9', '#a855f7'];
+
+// Quick-add asset categories (seed a name + a sensible default growth rate).
+const ASSET_TEMPLATES = [
+  { name: 'Cash / Current account', growth: 0.5 },
+  { name: 'Savings',                growth: 2 },
+  { name: 'ISA',                    growth: 5 },
+  { name: 'SIPP / Pension',         growth: 5 },
+  { name: 'House / Property',       growth: 3 },
+  { name: 'Other investments',      growth: 6 },
+  { name: 'Loan / Mortgage',        growth: 4, liability: true },
+];
+
+// Timeline event types.
+const EVENT_TYPES = [
+  { type: 'retirement',   label: 'Retirement',    color: '#9966ff', amount: false, single: true },
+  { type: 'statepension', label: 'State Pension', color: '#00a0f0', amount: true },
+  { type: 'inheritance',  label: 'Inheritance',   color: '#10b981', amount: true },
+  { type: 'expense',      label: 'Lump Expense',  color: '#fc5b3f', amount: true },
+  { type: 'end',          label: 'Forecast End',  color: '#64748b', amount: false, single: true },
+];
+const ETYPE = Object.fromEntries(EVENT_TYPES.map(e => [e.type, e]));
+const defaultAmount = (type) => ({ statepension: 11000, inheritance: 50000, expense: 20000 }[type] ?? 0);
+
+let _idc = 0;
+const uid = () => `x${++_idc}`;
 
 export default function CashCalView({ symbol = '$', currency = 'USD' }) {
-  const [currentAge,    setCurrentAge]    = useState(45);
-  const [retireAge,     setRetireAge]     = useState(65);
-  const [lifeExp,       setLifeExp]       = useState(90);
-  const [startingPot,   setStartingPot]   = useState(300000);
-  const [contribution,  setContribution]  = useState(12000);
-  const [expReturn,     setExpReturn]     = useState(5);
-  const [inflation,     setInflation]     = useState(2.5);
-  const [spending,      setSpending]      = useState(36000);
-  const [otherIncome,   setOtherIncome]   = useState(11000);
+  const [assets, setAssets] = useState([
+    { id: uid(), name: 'Savings',             value: 112000, growth: 2 },
+    { id: uid(), name: 'House / Property',    value: 565000, growth: 3 },
+    { id: uid(), name: 'Investment portfolio',value: 408000, growth: 6 },
+  ]);
+  const [events, setEvents] = useState([
+    { id: uid(), type: 'retirement', age: 60, amount: 0 },
+    { id: uid(), type: 'end',        age: 90, amount: 0 },
+  ]);
+  const [currentAge,  setCurrentAge]  = useState(45);
+  const [inflation,   setInflation]   = useState(3);
+  const [spending,    setSpending]    = useState(45000);
+  const [otherIncome, setOtherIncome] = useState(0);
+  const [addOpen,     setAddOpen]     = useState(false);
+  const [selEvent,    setSelEvent]    = useState(null);
 
-  const fmt = (v) => new Intl.NumberFormat('en-GB', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v || 0);
+  const trackRef = useRef(null);
 
-  const n = (v, d = 0) => (typeof v === 'number' && !isNaN(v) ? v : d);
+  const n   = (v, d = 0) => (typeof v === 'number' && !isNaN(v) ? v : d);
+  const fmt  = (v) => new Intl.NumberFormat('en-GB', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v || 0);
+  const fmtk = (v) => `${symbol}${Math.abs(v) >= 1000 ? (v / 1000).toFixed(0) + 'k' : v.toFixed(0)}`;
 
-  const result = useMemo(() => {
-    const ca = n(currentAge, 0), ra = Math.max(n(retireAge), ca), le = Math.max(n(lifeExp), ca);
-    const r = n(expReturn) / 100, infl = n(inflation) / 100;
-    let pot = n(startingPot);
-    const rows = [];
-    let depletionAge = null;
-    let potAtRetire = null;
+  // ── Assets ─────────────────────────────────────────────────────────────────
+  const addAsset = (tpl) => {
+    setAssets(p => [...p, { id: uid(), name: tpl ? tpl.name : 'New asset', value: tpl?.liability ? -50000 : 0, growth: tpl ? tpl.growth : 2 }]);
+    setAddOpen(false);
+  };
+  const removeAsset = (id) => setAssets(p => p.filter(a => a.id !== id));
+  const updateAsset = (id, field, val) =>
+    setAssets(p => p.map(a => a.id === id ? { ...a, [field]: field === 'name' ? val : (val === '' ? '' : parseFloat(val)) } : a));
 
-    for (let age = ca; age <= le; age++) {
-      const yrs = age - ca;
-      const inflFactor = Math.pow(1 + infl, yrs);
+  const totalStart = assets.reduce((s, a) => s + n(a.value), 0);
+  const avgGrowth  = totalStart > 0 ? assets.reduce((s, a) => s + n(a.value) * n(a.growth), 0) / totalStart : 0;
 
-      // Start-of-year cash flow, then growth for the year.
-      const working = age < ra;
-      const cashflow = working
-        ? n(contribution) * inflFactor
-        : -(Math.max(0, n(spending) - n(otherIncome))) * inflFactor;
+  // ── Events / timeline ────────────────────────────────────────────────────────
+  const retireAge   = n(events.find(e => e.type === 'retirement')?.age, 60);
+  const forecastEnd = Math.max(n(events.find(e => e.type === 'end')?.age, 90), n(currentAge) + 1);
+  const startAge    = n(currentAge);
+  const span        = Math.max(1, forecastEnd - startAge);
+  const ageToPct    = (age) => Math.min(100, Math.max(0, ((age - startAge) / span) * 100));
 
-      pot = (pot + cashflow) * (1 + r);
-      if (age === ra) potAtRetire = pot;
-
-      const floored = Math.max(pot, 0);
-      rows.push({
-        age,
-        nominal: Math.round(floored),
-        real: Math.round(floored / inflFactor),
-        phase: working ? 'Saving' : 'Drawdown',
+  const dropToAge = (clientX) => {
+    const rect = trackRef.current.getBoundingClientRect();
+    const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    return Math.round(startAge + frac * span);
+  };
+  const onTrackDrop = (e) => {
+    e.preventDefault();
+    let p; try { p = JSON.parse(e.dataTransfer.getData('text/plain')); } catch { return; }
+    const age = dropToAge(e.clientX);
+    if (p.kind === 'new') {
+      setEvents(prev => {
+        const next = ETYPE[p.type]?.single ? prev.filter(ev => ev.type !== p.type) : prev;
+        return [...next, { id: uid(), type: p.type, age, amount: defaultAmount(p.type) }];
       });
+    } else if (p.kind === 'move') {
+      setEvents(prev => prev.map(ev => ev.id === p.id ? { ...ev, age } : ev));
+    }
+  };
+  const updateEvent = (id, field, val) =>
+    setEvents(prev => prev.map(ev => ev.id === id ? { ...ev, [field]: val === '' ? '' : parseFloat(val) } : ev));
+  const removeEvent = (id) => { setEvents(prev => prev.filter(ev => ev.id !== id)); setSelEvent(null); };
 
-      if (pot <= 0 && depletionAge == null) { depletionAge = age; break; }
+  // ── Projection ──────────────────────────────────────────────────────────────
+  const { rows, depletionAge, lasts, finalTotal } = useMemo(() => {
+    const ca = startAge, ra = Math.max(retireAge, ca), ea = forecastEnd;
+    const infl = n(inflation) / 100;
+    let bal = assets.map(a => ({ id: a.id, v: n(a.value) }));
+    const out = [];
+    let depAge = null;
+
+    const positives = (b) => b.reduce((s, x) => s + Math.max(0, x.v), 0);
+    const applyLump = (b, amt) => {                       // amt + (add) or − (spend), from positives
+      const pos = positives(b);
+      if (amt >= 0) {
+        if (pos > 0) b.forEach(x => { if (x.v > 0) x.v += amt * (x.v / pos); });
+        else if (b.length) b[0].v += amt;
+      } else {
+        const need = -amt;
+        if (pos <= need) b.forEach(x => { if (x.v > 0) x.v = 0; });
+        else b.forEach(x => { if (x.v > 0) x.v -= need * (x.v / pos); });
+      }
+    };
+
+    for (let age = ca; age <= ea; age++) {
+      if (age > ca) {
+        const inflFactor = Math.pow(1 + infl, age - ca);
+        bal = bal.map((b, i) => ({ ...b, v: b.v * (1 + n(assets[i].growth) / 100) }));
+
+        // lump events landing on this age (today's money → inflated)
+        events.filter(e => e.age === age && (e.type === 'inheritance' || e.type === 'expense')).forEach(e => {
+          applyLump(bal, (e.type === 'inheritance' ? 1 : -1) * n(e.amount) * inflFactor);
+        });
+
+        // retirement drawdown, net of (other income + any active state pensions)
+        if (age >= ra) {
+          const pension = events.filter(e => e.type === 'statepension' && age >= e.age).reduce((s, e) => s + n(e.amount), 0);
+          const net = Math.max(0, n(spending) - n(otherIncome) - pension) * inflFactor;
+          if (net > 0) {
+            if (positives(bal) <= net) { bal.forEach(b => { if (b.v > 0) b.v = 0; }); if (depAge == null) depAge = age; }
+            else applyLump(bal, -net);
+          }
+        }
+      }
+      const row = { age };
+      assets.forEach((a, i) => { row[a.id] = Math.round(bal[i].v); });
+      out.push(row);
     }
 
-    const lasts = depletionAge == null;
-    const finalReal = rows.length ? rows[rows.length - 1].real : 0;
-    return { rows, depletionAge, lasts, finalReal, potAtRetire, retireAge: ra, lifeExp: le };
-  }, [currentAge, retireAge, lifeExp, startingPot, contribution, expReturn, inflation, spending, otherIncome]);
+    const last = out.length ? assets.reduce((s, a) => s + (out[out.length - 1][a.id] || 0), 0) : 0;
+    return { rows: out, depletionAge: depAge, lasts: depAge == null, finalTotal: last };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assets, events, currentAge, inflation, spending, otherIncome, retireAge, forecastEnd]);
 
-  const { rows, depletionAge, lasts, finalReal, potAtRetire } = result;
+  // Draggable palette chip
+  const PaletteChip = ({ et }) => (
+    <div
+      draggable
+      onDragStart={(e) => { e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'new', type: et.type })); e.dataTransfer.effectAllowed = 'copy'; }}
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-grab active:cursor-grabbing border select-none"
+      style={{ color: et.color, borderColor: `${et.color}40`, backgroundColor: `${et.color}10` }}
+    >
+      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: et.color }} /> {et.label}
+    </div>
+  );
+
+  const selectedEvent = events.find(e => e.id === selEvent);
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in">
-      {/* Header */}
-      <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+      {/* Header + outcome */}
+      <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <div className="bg-brand p-2 rounded-lg"><DollarSign className="w-6 h-6 text-white" /></div>
             <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Cash Flow Planner</h1>
-            <span className="px-2 py-0.5 rounded-md bg-gray-100 text-gray-500 text-[10px] font-bold uppercase tracking-wider">Assumptions-based</span>
           </div>
-          <p className="text-gray-500 ml-1">Project savings → drawdown to life expectancy · {currency}</p>
+          <p className="text-gray-500 ml-1">Project assets, events & drawdown to the forecast-end age · {currency}</p>
         </div>
         <div className={`p-5 rounded-xl shadow-sm border min-w-[260px] ${lasts ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'}`}>
           <p className="text-xs font-bold uppercase tracking-wider mb-1 text-gray-500">Outcome</p>
           {lasts ? (
             <>
-              <p className="text-xl font-bold text-emerald-700 leading-tight">Funds last to age {result.lifeExp} ✓</p>
-              <p className="text-xs text-emerald-600 mt-1">Projected surplus ≈ {fmt(finalReal)} <span className="text-gray-400">(today's money)</span></p>
+              <p className="text-xl font-bold text-emerald-700 leading-tight">Funds last to age {forecastEnd} ✓</p>
+              <p className="text-xs text-emerald-600 mt-1">Projected balance ≈ {fmt(finalTotal)} <span className="text-gray-400">(nominal)</span></p>
             </>
           ) : (
             <>
               <p className="text-xl font-bold text-rose-700 leading-tight">Runs out at age {depletionAge}</p>
-              <p className="text-xs text-rose-600 mt-1">{result.lifeExp - depletionAge} year{result.lifeExp - depletionAge === 1 ? '' : 's'} short of life expectancy ({result.lifeExp})</p>
+              <p className="text-xs text-rose-600 mt-1">{forecastEnd - depletionAge} year(s) short of forecast end</p>
             </>
           )}
         </div>
       </header>
 
-      {/* Inputs */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 mb-6">
-        <NumberField label="Current age"          value={currentAge}   onChange={setCurrentAge} suffix="yrs" />
-        <NumberField label="Retirement age"       value={retireAge}    onChange={setRetireAge}  suffix="yrs" />
-        <NumberField label="Life expectancy"      value={lifeExp}      onChange={setLifeExp}    suffix="yrs" />
-        <NumberField label="Current pot"          value={startingPot}  onChange={setStartingPot} prefix={symbol} step={1000} />
-        <NumberField label="Annual contribution"  hint="While working; grows with inflation" value={contribution} onChange={setContribution} prefix={symbol} step={500} />
-        <NumberField label="Expected return"      hint="Net of fund fees, p.a." value={expReturn} onChange={setExpReturn} suffix="%" step={0.1} />
-        <NumberField label="Inflation"            value={inflation}    onChange={setInflation}  suffix="%" step={0.1} />
-        <NumberField label="Annual spending"      hint="In retirement, today's money" value={spending} onChange={setSpending} prefix={symbol} step={500} />
-        <NumberField label="Other income"         hint="Pension / state, today's money" value={otherIncome} onChange={setOtherIncome} prefix={symbol} step={500} />
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Assets list */}
+        <div className="lg:col-span-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800">Assets, savings & investments</h3>
+            <div className="relative">
+              <button onClick={() => setAddOpen(o => !o)} className="flex items-center gap-1.5 px-3 py-1.5 bg-brand text-white rounded-lg text-xs font-bold hover:bg-brand2">
+                <Plus size={14} /> Add asset
+              </button>
+              {addOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setAddOpen(false)} />
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-gray-200 shadow-xl p-2 z-20 space-y-0.5">
+                    <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quick add category</div>
+                    {ASSET_TEMPLATES.map(t => (
+                      <button key={t.name} onClick={() => addAsset(t)} className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">
+                        <span>{t.name}</span><span className="text-gray-400 font-mono">{t.growth}%</span>
+                      </button>
+                    ))}
+                    <div className="border-t border-gray-100 my-1" />
+                    <button onClick={() => addAsset(null)} className="w-full text-left px-2 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 rounded-lg">+ Blank asset</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Pot at retirement</p>
-          <p className="text-xl font-bold text-gray-900 font-mono">{potAtRetire != null ? fmt(potAtRetire) : '—'}</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Net drawdown / yr</p>
-          <p className="text-xl font-bold text-gray-900 font-mono">{fmt(Math.max(0, n(spending) - n(otherIncome)))}</p>
-          <p className="text-[10px] text-gray-400">today's money</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Real return</p>
-          <p className="text-xl font-bold text-gray-900 font-mono">{(n(expReturn) - n(inflation)).toFixed(1)}%</p>
-          <p className="text-[10px] text-gray-400">return − inflation</p>
-        </div>
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Horizon</p>
-          <p className="text-xl font-bold text-gray-900 font-mono">{Math.max(0, n(lifeExp) - n(currentAge))} yrs</p>
-        </div>
-      </div>
+          {assets.map((a, i) => (
+            <div key={a.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+              <input type="text" value={a.name} onChange={(e) => updateAsset(a.id, 'name', e.target.value)}
+                className="flex-1 min-w-0 font-semibold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-brand outline-none text-sm py-0.5" />
+              <div className="relative w-32 shrink-0">
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{symbol}</span>
+                <input type="number" step={1000} value={a.value} onChange={(e) => updateAsset(a.id, 'value', e.target.value)}
+                  className="w-full pl-5 pr-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono font-semibold outline-none focus:border-brand" />
+              </div>
+              <div className="relative w-20 shrink-0" title="Annual growth / return">
+                <input type="number" step={0.1} value={a.growth} onChange={(e) => updateAsset(a.id, 'growth', e.target.value)}
+                  className="w-full pl-2 pr-5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono outline-none focus:border-brand" />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">%</span>
+              </div>
+              <button onClick={() => removeAsset(a.id)} className="p-1.5 text-gray-300 hover:text-rose-500 rounded-lg hover:bg-rose-50 shrink-0"><Trash2 size={15} /></button>
+            </div>
+          ))}
 
-      {/* Projection chart */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-bold text-gray-800">Projected Pot Value by Age</h3>
-          <div className="flex items-center gap-3 text-[10px] font-bold text-gray-500">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-brand" /> Nominal</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-brand3" /> Real (today's £/$/€)</span>
+          <div className="bg-gray-50 rounded-2xl border border-gray-100 px-4 py-3 flex items-center justify-between text-sm">
+            <span className="text-gray-500 font-semibold">Net total at start: <span className="text-gray-900 font-bold ml-1">{fmt(totalStart)}</span></span>
+            <span className="text-gray-500 font-semibold">Avg growth: <span className="text-brand font-bold ml-1">{avgGrowth.toFixed(2)}%</span></span>
           </div>
         </div>
-        <div className="w-full h-[360px]">
+
+        {/* Assumptions */}
+        <div className="lg:col-span-2">
+          <h3 className="text-sm font-bold text-gray-800 mb-3">Assumptions</h3>
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
+            {[
+              ['Current age', currentAge, setCurrentAge, 'yrs', 1],
+              ['Inflation rate', inflation, setInflation, '%', 0.1],
+            ].map(([label, val, setter, suffix, step]) => (
+              <div key={label} className="flex items-center justify-between gap-3">
+                <label className="text-xs font-bold text-gray-500">{label}</label>
+                <div className="relative w-28">
+                  <input type="number" step={step} value={val} onChange={(e) => setter(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                    className="w-full pl-2 pr-8 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono font-semibold outline-none focus:border-brand" />
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold">{suffix}</span>
+                </div>
+              </div>
+            ))}
+            <div className="h-px bg-gray-100" />
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Retirement spending (today's money)</p>
+            {[['Annual spending', spending, setSpending], ['Other income', otherIncome, setOtherIncome]].map(([label, val, setter]) => (
+              <div key={label} className="flex items-center justify-between gap-3">
+                <label className="text-xs font-bold text-gray-500">{label}</label>
+                <div className="relative w-28">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{symbol}</span>
+                  <input type="number" step={500} value={val} onChange={(e) => setter(e.target.value === '' ? '' : parseFloat(e.target.value))}
+                    className="w-full pl-5 pr-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-mono font-semibold outline-none focus:border-brand" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Events & timeline (drag-and-drop) */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
+        <h3 className="text-sm font-bold text-gray-800 mb-1">Events & Timeline</h3>
+        <p className="text-xs text-gray-400 mb-3">Drag an event onto the timeline. Drag a placed event to move it; click it to edit or delete.</p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          {EVENT_TYPES.map(et => <PaletteChip key={et.type} et={et} />)}
+        </div>
+
+        <div
+          ref={trackRef}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={onTrackDrop}
+          className="relative h-24 bg-gray-50 border border-dashed border-gray-300 rounded-xl"
+        >
+          {/* retirement shading */}
+          <div className="absolute top-0 bottom-6 bg-brand6/40 rounded-l-xl pointer-events-none"
+            style={{ left: `${ageToPct(retireAge)}%`, right: 0 }} />
+          {/* placed events */}
+          {events.map(ev => {
+            const et = ETYPE[ev.type];
+            return (
+              <div
+                key={ev.id}
+                draggable
+                onDragStart={(e) => { e.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'move', id: ev.id })); e.dataTransfer.effectAllowed = 'move'; }}
+                onClick={() => setSelEvent(ev.id)}
+                className="absolute -translate-x-1/2 top-2 px-2 py-1 rounded-md text-[10px] font-bold text-white cursor-grab active:cursor-grabbing shadow-sm whitespace-nowrap"
+                style={{ left: `${ageToPct(ev.age)}%`, backgroundColor: et?.color, outline: selEvent === ev.id ? '2px solid #111' : 'none' }}
+                title={`${et?.label} @ age ${ev.age}`}
+              >
+                {et?.label} · {ev.age}
+              </div>
+            );
+          })}
+          {/* axis ticks */}
+          <div className="absolute bottom-0 left-0 right-0 h-6 flex justify-between px-1 text-[9px] font-mono text-gray-400">
+            {Array.from({ length: 6 }).map((_, k) => {
+              const age = Math.round(startAge + (span * k) / 5);
+              return <span key={k}>{age}</span>;
+            })}
+          </div>
+        </div>
+
+        {/* selected-event editor */}
+        {selectedEvent && (
+          <div className="mt-3 flex flex-wrap items-end gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3">
+            <span className="text-xs font-bold text-gray-700">{ETYPE[selectedEvent.type]?.label}</span>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 uppercase">Age</label>
+              <input type="number" value={selectedEvent.age} onChange={(e) => updateEvent(selectedEvent.id, 'age', e.target.value)}
+                className="w-20 px-2 py-1 bg-white border border-gray-200 rounded-lg text-sm font-mono outline-none focus:border-brand" />
+            </div>
+            {ETYPE[selectedEvent.type]?.amount && (
+              <div>
+                <label className="block text-[10px] font-bold text-gray-400 uppercase">Amount {selectedEvent.type === 'statepension' ? '(/yr)' : ''} · today's money</label>
+                <div className="relative w-32">
+                  <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{symbol}</span>
+                  <input type="number" step={500} value={selectedEvent.amount} onChange={(e) => updateEvent(selectedEvent.id, 'amount', e.target.value)}
+                    className="w-full pl-5 pr-2 py-1 bg-white border border-gray-200 rounded-lg text-sm font-mono outline-none focus:border-brand" />
+                </div>
+              </div>
+            )}
+            <button onClick={() => removeEvent(selectedEvent.id)} className="flex items-center gap-1 px-2 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-bold">
+              <Trash2 size={13} /> Remove
+            </button>
+            <button onClick={() => setSelEvent(null)} className="ml-auto p-1 text-gray-400 hover:text-gray-700"><X size={14} /></button>
+          </div>
+        )}
+      </div>
+
+      {/* Stacked bar projection */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 className="text-sm font-bold text-gray-800">How assets change over time</h3>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-gray-500">
+            {assets.map((a, i) => (
+              <span key={a.id} className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: COLORS[i % COLORS.length] }} /> {a.name}</span>
+            ))}
+          </div>
+        </div>
+        <div className="w-full h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={rows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="cashNominal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2d0738" stopOpacity={0.15} />
-                  <stop offset="100%" stopColor="#2d0738" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+            <BarChart data={rows} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="#e2e8f0" />
-              <XAxis dataKey="age" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} width={60}
-                tickFormatter={(v) => `${symbol}${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                formatter={(v, name) => [fmt(v), name === 'nominal' ? 'Nominal' : 'Real']}
-                labelFormatter={(age) => `Age ${age}`}
-                contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }}
-              />
-              <ReferenceLine x={result.retireAge} stroke="#9966ff" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 10, fill: '#9966ff' }} />
+              <XAxis dataKey="age" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(rows.length / 12))} />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={false} tickLine={false} width={48} tickFormatter={fmtk} />
+              <Tooltip formatter={(v, name) => [fmt(v), assets.find(a => a.id === name)?.name || name]} labelFormatter={(age) => `Age ${age}`}
+                contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
               <ReferenceLine y={0} stroke="#94a3b8" />
-              <Area type="monotone" dataKey="nominal" stroke="#2d0738" strokeWidth={2} fill="url(#cashNominal)" isAnimationActive={false} />
-              <Area type="monotone" dataKey="real" stroke="#fc5b3f" strokeWidth={1.5} fill="none" isAnimationActive={false} />
-            </AreaChart>
+              <ReferenceLine x={retireAge} stroke="#9966ff" strokeDasharray="4 4" label={{ value: 'Retire', position: 'top', fontSize: 10, fill: '#9966ff' }} />
+              {assets.map((a, i) => (
+                <Bar key={a.id} dataKey={a.id} stackId="s" fill={COLORS[i % COLORS.length]} isAnimationActive={false} />
+              ))}
+            </BarChart>
           </ResponsiveContainer>
         </div>
         <p className="text-[10px] text-gray-400 mt-3">
-          Simplified deterministic model: a single average return is applied every year (no sequence-of-returns risk or tax).
-          Spending and other income grow with inflation; “real” values are deflated to today's money.
+          Each asset compounds at its own rate; events (inheritance, lump expense, state pension) and inflation-linked drawdown
+          from the retirement age are applied to the projection. Deterministic — no sequence-of-returns risk or tax. Values nominal.
         </p>
       </div>
     </div>
