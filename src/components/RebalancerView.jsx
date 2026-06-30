@@ -50,6 +50,43 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
         return 0;
     };
 
+    // Merge a preset's holdings into the current table, preserving any units the
+    // user has already entered (matched by ISIN) and their manual price overrides.
+    // Holdings the user populated that the new model drops are kept with a 0%
+    // target so they still surface as "sell" directives — nothing entered is lost.
+    const buildPresetAssets = (items, cur) => {
+        const priorByIsin = {};
+        assets.forEach(a => {
+            const k = (a.isin || '').toUpperCase();
+            if (k && k !== 'N/A') priorByIsin[k] = a;
+        });
+        const used = new Set();
+
+        const merged = items.map(a => {
+            const k = (a.isin || '').toUpperCase();
+            const prior = (k && k !== 'N/A') ? priorByIsin[k] : null;
+            if (prior) used.add(k);
+            return {
+                id:              prior ? prior.id : crypto.randomUUID(),
+                name:            a.name,
+                isin:            a.isin,
+                price:           (prior && prior.priceOverridden) ? prior.price : getLivePrice(a.isin, cur),
+                units:           prior ? prior.units : '',
+                target:          a.target,
+                priceOverridden: prior ? prior.priceOverridden : false,
+            };
+        });
+
+        // Carry over holdings the user populated that the new model doesn't include.
+        assets.forEach(a => {
+            const k = (a.isin || '').toUpperCase();
+            const populated = (parseFloat(a.units) || 0) !== 0;
+            if (populated && !(k && used.has(k))) merged.push({ ...a, target: 0 });
+        });
+
+        return merged;
+    };
+
     // Row Handlers
     const addBlankRow = () => {
         setAssets(prev => [...prev, { id: crypto.randomUUID(), name: "New Asset", isin: "", price: '', units: '', target: '', priceOverridden: false }]);
@@ -198,16 +235,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                 <div className="max-h-[60vh] overflow-y-auto space-y-2 pr-1">
                     {Object.entries(presets[category][selectedCurrency]).map(([profileName, items]) => (
                         <button key={profileName} onClick={() => {
-                            const newAssets = items.map(a => ({
-                                id: crypto.randomUUID(),
-                                name: a.name,
-                                isin: a.isin,
-                                price: getLivePrice(a.isin, selectedCurrency),
-                                units: '',
-                                target: a.target,
-                                priceOverridden: false
-                            }));
-                            setAssets(newAssets);
+                            setAssets(buildPresetAssets(items, selectedCurrency));
                             setPresetModalOpen(false);
                             if (setActiveCurrency) setActiveCurrency(selectedCurrency);
                         }} className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 hover:border-brand3 hover:ring-1 hover:ring-brand3 rounded-xl text-left transition-all group">

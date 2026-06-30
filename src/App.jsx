@@ -20,8 +20,9 @@ import PerformanceAnalyticsView from './components/PerformanceAnalyticsView';
 import PortfoliosView           from './components/PortfoliosView';
 import TaxCalculatorView        from './components/TaxCalculatorView';
 import IHTCalculatorView        from './components/IHTCalculatorView';
+import CashCalView              from './components/CashCalView';
 import { TabButton }            from './components/TabButton';
-import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase } from './components/Icons';
+import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase, DollarSign } from './components/Icons';
  
 import { CURRENCY_SYMBOLS } from './constants';
  
@@ -68,6 +69,38 @@ export default function App() {
     const [syncErrors,      setSyncErrors]      = useState([]);
  
     const symbol = CURRENCY_SYMBOLS[activeCurrency] || '$';
+
+    // ── Grouped navigation ─────────────────────────────────────────────────
+    // Primary tabs: Rebalancer · Analytics · Calculators. The Analytics and
+    // Calculators groups expose sub-tabs and each remembers its last sub-tab.
+    const [lastAnalyticsTab, setLastAnalyticsTab] = useState('analytics');
+    const [lastCalcTab,      setLastCalcTab]      = useState('tax');
+
+    const ANALYTICS_TABS = ['analytics', 'portfolios', 'market'];
+    const CALC_TABS      = ['tax', 'IHT', 'cashcal'];
+    const activeGroup =
+        ANALYTICS_TABS.includes(activeTab) ? 'analytics'
+        : CALC_TABS.includes(activeTab)    ? 'calculators'
+        : 'rebalancer';
+
+    const goTo = (tab) => {
+        setActiveTab(tab);
+        if (ANALYTICS_TABS.includes(tab)) setLastAnalyticsTab(tab);
+        if (CALC_TABS.includes(tab))      setLastCalcTab(tab);
+    };
+
+    const SUBTABS = {
+        analytics: [
+            { id: 'analytics',  label: 'Analytics',  icon: <PieChart size={14} /> },
+            { id: 'portfolios', label: 'Portfolios', icon: <Briefcase size={14} /> },
+            { id: 'market',     label: 'Pulse',      icon: <TrendingUp size={14} /> },
+        ],
+        calculators: [
+            { id: 'tax',     label: 'CGT',     icon: <PoundSign size={14} /> },
+            { id: 'IHT',     label: 'IHT',     icon: <PoundSign size={14} /> },
+            { id: 'cashcal', label: 'CashCal', icon: <DollarSign size={14} /> },
+        ],
+    };
  
     // ── Data fetch ───────────────────────────────────────────────────────────
     useEffect(() => {
@@ -125,40 +158,22 @@ export default function App() {
  
                             <div className="flex h-full gap-4">
                                 <TabButton
-                                    active={activeTab === 'rebalancer'}
+                                    active={activeGroup === 'rebalancer'}
                                     onClick={() => setActiveTab('rebalancer')}
                                     icon={<RefreshCw size={16} />}
-                                    label="Rebalance"
+                                    label="Rebalancer"
                                 />
                                 <TabButton
-                                    active={activeTab === 'market'}
-                                    onClick={() => setActiveTab('market')}
-                                    icon={<TrendingUp size={16} />}
-                                    label="Pulse"
-                                />
-                                <TabButton
-                                    active={activeTab === 'analytics'}
-                                    onClick={() => setActiveTab('analytics')}
+                                    active={activeGroup === 'analytics'}
+                                    onClick={() => goTo(lastAnalyticsTab)}
                                     icon={<PieChart size={16} />}
                                     label="Analytics"
                                 />
                                 <TabButton
-                                    active={activeTab === 'portfolios'}
-                                    onClick={() => setActiveTab('portfolios')}
-                                    icon={<Briefcase size={16} />}
-                                    label="Portfolios"
-                                />
-                                <TabButton
-                                    active={activeTab === 'tax'}
-                                    onClick={() => setActiveTab('tax')}
-                                    icon={<PoundSign size={16} />}
-                                    label="Tax"
-                                />
-                                 <TabButton
-                                    active={activeTab === 'IHT'}
-                                    onClick={() => setActiveTab('IHT')}
-                                    icon={<PoundSign size={16} />}
-                                    label="IHT"
+                                    active={activeGroup === 'calculators'}
+                                    onClick={() => goTo(lastCalcTab)}
+                                    icon={<DollarSign size={16} />}
+                                    label="Calculators"
                                 />
                             </div>
                         </div>
@@ -194,6 +209,27 @@ export default function App() {
                     </div>
                 </div>
             </nav>
+
+            {/* ── Sub-tab bar (Analytics / Calculators groups) ───────────── */}
+            {(activeGroup === 'analytics' || activeGroup === 'calculators') && (
+                <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 flex items-center gap-1 h-12">
+                        {SUBTABS[activeGroup].map((st) => (
+                            <button
+                                key={st.id}
+                                onClick={() => goTo(st.id)}
+                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    activeTab === st.id
+                                        ? 'bg-brand6 text-brand'
+                                        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                                }`}
+                            >
+                                {st.icon} {st.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
  
             {/* ── Partial-failure banner ─────────────────────────────────── */}
             {!isFetchingData && syncErrors.length > 0 && (
@@ -211,7 +247,8 @@ export default function App() {
  
             {/* ── Main Viewport ──────────────────────────────────────────── */}
             <main className="py-6">
-                {activeTab === 'rebalancer' && (
+                {/* Rebalancer stays mounted so entries persist across tab switches */}
+                <div className={activeTab === 'rebalancer' ? '' : 'hidden'}>
                     <RebalancerView
                         presets={presets}
                         symbol={symbol}
@@ -220,11 +257,12 @@ export default function App() {
                         pricesData={pricesData}
                         liveRates={liveRates}
                     />
-                )}
+                </div>
  
                 {activeTab === 'market' && (
                     <MarketPulseView
                         data={marketPulseData}
+                        historicalData={historicalData}
                         symbol={symbol}
                         currency={activeCurrency}
                     />
@@ -262,6 +300,12 @@ export default function App() {
                         symbol="£"
                         currency="GBP"
                         pricesData={gbpMarketData}
+                    />
+                )}
+                {activeTab === 'cashcal' && (
+                    <CashCalView
+                        symbol={symbol}
+                        currency={activeCurrency}
                     />
                 )}
             </main>
