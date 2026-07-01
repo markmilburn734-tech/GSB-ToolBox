@@ -14,6 +14,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { DollarSign, Plus, Trash2, X } from './Icons';
+import { estimateIHT } from '../constants';
 
 const COLORS = ['#2d0738', '#9966ff', '#00a0f0', '#fc5b3f', '#10b981', '#f59e0b', '#ec4899', '#64748b', '#0ea5e9', '#a855f7'];
 
@@ -56,6 +57,11 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
   const [inflation,   setInflation]   = useState(3);
   const [spending,    setSpending]    = useState(45000);
   const [otherIncome, setOtherIncome] = useState(0);
+  const [ihtJoint,   setIhtJoint]   = useState(false);
+  const [coverSum,   setCoverSum]   = useState(0);
+  const [coverType,  setCoverType]  = useState('Whole of Life');
+  const [coverTerm,  setCoverTerm]  = useState(20);
+  const [coverTrust, setCoverTrust] = useState(true);
   const [addOpen,     setAddOpen]     = useState(false);
   const [selEvent,    setSelEvent]    = useState(null);
 
@@ -156,6 +162,20 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
     return { rows: out, depletionAge: depAge, lasts: depAge == null, finalTotal: last };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assets, events, currentAge, inflation, spending, otherIncome, retireAge, forecastEnd]);
+
+  // Estate / IHT at the forecast-end age (nominal estate vs today's frozen bands),
+  // with an optional life policy — a term policy that has expired by the forecast
+  // age provides no cover; in-trust cover offsets the bill, non-trust adds to it.
+  const ihtEstate     = Math.max(0, finalTotal);
+  const yearsToEnd    = Math.max(0, forecastEnd - n(currentAge));
+  const coverInForce  = coverType === 'Whole of Life' || yearsToEnd <= n(coverTerm);
+  const activeCover   = coverInForce ? n(coverSum) : 0;
+  const estateForIht  = ihtEstate + (coverInForce && !coverTrust ? activeCover : 0);
+  const ihtDue        = estimateIHT(estateForIht, { joint: ihtJoint });
+  const coverOffset   = coverInForce && coverTrust ? activeCover : 0;
+  const ihtAfterCover = Math.max(0, ihtDue - coverOffset);
+  const netToHeirs    = estateForIht - ihtDue + coverOffset;
+  const termLapsed    = coverType !== 'Whole of Life' && n(coverSum) > 0 && yearsToEnd > n(coverTerm);
 
   // Draggable palette chip
   const PaletteChip = ({ et }) => (
@@ -280,6 +300,39 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Estate & IHT at forecast end */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className="text-sm font-bold text-gray-800 mb-0.5">Estate & IHT at age {forecastEnd}</h3>
+            <p className="text-xs text-gray-400">Estimated UK inheritance tax on the projected estate (nominal · today's bands · £2m RNRB taper).</p>
+          </div>
+          <label className="flex items-center gap-2 text-xs font-semibold text-gray-600">
+            <input type="checkbox" checked={ihtJoint} onChange={(e) => setIhtJoint(e.target.checked)} /> Joint / married (double bands)
+          </label>
+        </div>
+
+        {/* Life cover row */}
+        <div className="flex flex-wrap items-end gap-3 mt-4 bg-gray-50 border border-gray-200 rounded-xl p-3">
+          <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Life cover</label>
+            <div className="relative w-32"><span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{symbol}</span>
+              <input type="number" step={10000} value={coverSum} onChange={(e) => setCoverSum(e.target.value === '' ? '' : parseFloat(e.target.value))} className="w-full pl-6 pr-2 py-1.5 bg-white border border-gray-200 rounded-lg font-mono text-sm outline-none" /></div></div>
+          <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Type</label>
+            <select value={coverType} onChange={(e) => setCoverType(e.target.value)} className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium outline-none"><option>Whole of Life</option><option>Level Term</option><option>Decreasing Term</option></select></div>
+          <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Term (yrs)</label>
+            <input type="number" disabled={coverType === 'Whole of Life'} value={coverTerm} onChange={(e) => setCoverTerm(e.target.value === '' ? '' : parseFloat(e.target.value))} className="w-20 py-1.5 px-2 bg-white border border-gray-200 rounded-lg font-mono text-sm outline-none disabled:bg-gray-100 disabled:text-gray-300" /></div>
+          <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 pb-1.5"><input type="checkbox" checked={coverTrust} onChange={(e) => setCoverTrust(e.target.checked)} /> In trust</label>
+          {termLapsed && <span className="text-[11px] font-bold text-rose-600 pb-1.5">⚠ Term lapses at age {n(currentAge) + n(coverTerm)} — no cover at {forecastEnd}</span>}
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Estate at death</p><p className="text-xl font-bold text-gray-900 font-mono">{fmt(estateForIht)}</p></div>
+          <div className="bg-rose-50 rounded-xl p-4 border border-rose-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Estimated IHT</p><p className="text-xl font-bold text-rose-600 font-mono">{fmt(ihtDue)}</p></div>
+          <div className="bg-white rounded-xl p-4 border border-gray-200"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">After cover</p><p className={`text-xl font-bold font-mono ${ihtAfterCover > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{ihtAfterCover > 0 ? fmt(ihtAfterCover) : 'Covered ✓'}</p></div>
+          <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Net to heirs</p><p className="text-xl font-bold text-emerald-600 font-mono">{fmt(netToHeirs)}</p></div>
         </div>
       </div>
 

@@ -200,6 +200,21 @@ export default function PerformanceAnalyticsView({
     getVolBadgeStyles,
   } = usePerformanceMetrics({ presets, historicalData, pricesData });
 
+  // Live return for the slice currently being dragged (shown as a floating badge).
+  const dragSlice = (() => {
+    if (!isSelecting || !refAreaLeft || !refAreaRight || refAreaLeft === refAreaRight) return null;
+    let s = chartData.findIndex(d => d.name === refAreaLeft);
+    let e = chartData.findIndex(d => d.name === refAreaRight);
+    if (s < 0 || e < 0) return null;
+    if (s > e) [s, e] = [e, s];
+    const stats = selections.map((sel, idx) => {
+      const sr = chartData[s]?.[`raw_${idx}`];
+      const er = chartData[e]?.[`raw_${idx}`];
+      return (sr && er) ? { idx, name: finalStats[idx]?.name || `Series ${idx + 1}`, ret: (er / sr - 1) * 100 } : null;
+    }).filter(Boolean);
+    return { start: chartData[s].name, end: chartData[e].name, stats };
+  })();
+
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
 
@@ -477,7 +492,15 @@ export default function PerformanceAnalyticsView({
             </div>
 
             {/* ── Recharts ComposedChart: crisp lines + ghost area fills ───── */}
-            <div className="w-full h-[420px] min-w-0 select-none cursor-crosshair">
+            <div className="w-full h-[420px] min-w-0 select-none cursor-crosshair relative">
+              {dragSlice && (
+                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 bg-[#0f172a] text-white rounded-lg px-3 py-1.5 shadow-xl text-xs font-mono pointer-events-none flex items-center gap-2 whitespace-nowrap">
+                  <span className="text-slate-400">{dragSlice.start} → {dragSlice.end}</span>
+                  {dragSlice.stats.map((s) => (
+                    <span key={s.idx} className="font-bold" style={{ color: COLORS[s.idx] }}>{s.ret >= 0 ? '+' : ''}{s.ret.toFixed(1)}%</span>
+                  ))}
+                </div>
+              )}
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart
                   data={chartData}
@@ -496,12 +519,13 @@ export default function PerformanceAnalyticsView({
                     ))}
                   </defs>
 
-                  {/* Subtle horizontal gridlines only */}
+                  {/* Faint gridlines — horizontal at every % tick, light verticals */}
                   <CartesianGrid
                     strokeDasharray="2 4"
-                    vertical={false}
-                    stroke="#e2e8f0"
-                    strokeOpacity={0.6}
+                    stroke="#cbd5e1"
+                    strokeOpacity={0.55}
+                    vertical
+                    syncWithTicks
                   />
 
                   {/* Base-100 reference line */}
@@ -525,9 +549,11 @@ export default function PerformanceAnalyticsView({
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'monospace' }}
-                    tickFormatter={(v) => v.toFixed(0)}
-                    width={42}
+                    tickFormatter={(v) => `${v - 100 >= 0 ? '+' : ''}${(v - 100).toFixed(0)}%`}
+                    width={48}
                     domain={['auto', 'auto']}
+                    tickCount={9}
+                    allowDecimals={false}
                   />
 
                   {/* Crosshair tooltip (suppressed during drag selection) */}
@@ -586,10 +612,11 @@ export default function PerformanceAnalyticsView({
                     <ReferenceArea
                       x1={refAreaLeft}
                       x2={refAreaRight}
-                      fill="#0f172a"
-                      fillOpacity={0.06}
-                      stroke="#0f172a"
-                      strokeOpacity={0.15}
+                      fill="#9966ff"
+                      fillOpacity={0.12}
+                      stroke="#9966ff"
+                      strokeOpacity={0.5}
+                      strokeDasharray="3 3"
                     />
                   )}
                 </ComposedChart>

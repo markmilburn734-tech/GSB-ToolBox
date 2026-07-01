@@ -1317,6 +1317,52 @@ export function computeTransactionFee(value, currency, bankClass, bank, liveRate
     return { fee, rate, minFee, chf, appliedMin: minFee > pctFee };
 }
 
+// ─── UK Inheritance Tax helpers ──────────────────────────────────────────────
+
+export const IHT = Object.freeze({
+    RATE: 0.40,          // standard estate rate
+    NRB: 325000,         // nil-rate band (per person)
+    RNRB: 175000,        // residence nil-rate band (per person)
+    TAPER_THRESHOLD: 2000000,  // RNRB tapers £1 for every £2 over this
+});
+
+/**
+ * RNRB after the £2m taper (£1 lost per £2 the estate exceeds the threshold).
+ * @param {number} estateValue   value of the estate for taper purposes
+ * @param {boolean} joint        double the band + threshold for a couple
+ * @param {boolean} claim        false if no residence passes to direct descendants
+ */
+export function residenceNilRateBand(estateValue, joint = false, claim = true) {
+    const base = claim ? IHT.RNRB * (joint ? 2 : 1) : 0;
+    // Taper threshold is per-estate (£2m) — NOT doubled by a spouse transfer.
+    const reduction = Math.max(0, ((estateValue || 0) - IHT.TAPER_THRESHOLD) / 2);
+    return Math.max(0, base - reduction);
+}
+
+/**
+ * Simplified IHT on an estate value: NRB + tapered RNRB, remainder at 40%.
+ * (No gifts/reliefs — used by the cash-flow planner's liability line.)
+ */
+export function estimateIHT(estateValue, { joint = false, claimRNRB = true } = {}) {
+    const nrb  = IHT.NRB * (joint ? 2 : 1);
+    const rnrb = residenceNilRateBand(estateValue, joint, claimRNRB);
+    return Math.max(0, (estateValue || 0) - nrb - rnrb) * IHT.RATE;
+}
+
+/**
+ * Taper-relief multiplier on the TAX of a failed PET, by years before death.
+ * <3y none, then 20/40/60/80% relief, 7y+ exempt.
+ */
+export function giftTaperMultiplier(yearsAgo) {
+    const y = yearsAgo || 0;
+    if (y < 3) return 1;
+    if (y < 4) return 0.8;
+    if (y < 5) return 0.6;
+    if (y < 6) return 0.4;
+    if (y < 7) return 0.2;
+    return 0;
+}
+
 // ─── 3. Currency Symbols ──────────────────────────────────────────────────────
 /** @type {{ [currency: string]: string }} */
 export const CURRENCY_SYMBOLS = {
