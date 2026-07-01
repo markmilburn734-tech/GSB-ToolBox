@@ -166,6 +166,9 @@ export default function PerformanceAnalyticsView({
 
     timeframe,
     setTimeframe,
+    costs,
+    setCosts,
+    totalDrag,
 
     selections,
     addSelection,
@@ -201,10 +204,13 @@ export default function PerformanceAnalyticsView({
   } = usePerformanceMetrics({ presets, historicalData, pricesData });
 
   // Live return for the slice currently being dragged (shown as a floating badge).
+  const tLabels = {};
+  chartData.forEach((d) => { tLabels[d.t] = d.name; });
+
   const dragSlice = (() => {
     if (!isSelecting || !refAreaLeft || !refAreaRight || refAreaLeft === refAreaRight) return null;
-    let s = chartData.findIndex(d => d.name === refAreaLeft);
-    let e = chartData.findIndex(d => d.name === refAreaRight);
+    let s = chartData.findIndex(d => d.t === refAreaLeft);
+    let e = chartData.findIndex(d => d.t === refAreaRight);
     if (s < 0 || e < 0) return null;
     if (s > e) [s, e] = [e, s];
     const stats = selections.map((sel, idx) => {
@@ -256,6 +262,23 @@ export default function PerformanceAnalyticsView({
             <Plus size={14} /> Compare ({selections.length}/4)
           </button>
         </div>
+      </div>
+
+      {/* ── Cost adjustments (advice fees not in fund prices) ─────────────── */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Advice costs (p.a.)</span>
+        {[['advisor', 'Advisor'], ['platform', 'Platform'], ['trustee', 'Trustee (pensions)']].map(([k, label]) => (
+          <label key={k} className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
+            {label}
+            <span className="relative w-16">
+              <input type="number" step={0.05} value={costs[k]}
+                onChange={(e) => setCosts({ ...costs, [k]: e.target.value === '' ? '' : parseFloat(e.target.value) })}
+                className="w-full pl-2 pr-5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono outline-none focus:border-slate-400" />
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">%</span>
+            </span>
+          </label>
+        ))}
+        <span className="text-[11px] font-bold text-slate-400 ml-auto">Applied drag: <span className="text-brand3">{totalDrag.toFixed(2)}% p.a.</span></span>
       </div>
 
       {/* ── Series Selector Cards ─────────────────────────────────────────── */}
@@ -538,7 +561,8 @@ export default function PerformanceAnalyticsView({
                   />
 
                   <XAxis
-                    dataKey="name"
+                    dataKey="t"
+                    tickFormatter={(t) => tLabels[t] ?? ''}
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#94a3b8', fontSize: 10, fontFamily: 'monospace' }}

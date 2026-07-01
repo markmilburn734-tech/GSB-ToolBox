@@ -165,18 +165,20 @@ function priceAsOf(dates, prices, t) {
  * return-weighted), forward-filled per axis date, then renormalised by the
  * weight actually present.
  *
- * NOTE: no TER drag is applied. Fund NAV / ETF price is already struck net of
- * the fund's ongoing charge, so the series is inherently net of fund fees —
- * re-applying TER would double-count it. Blended TER is surfaced separately as
- * an informational "net cost" badge only.
+ * No fund TER drag is applied (fund NAV is already struck net of the fund's own
+ * charge). `dragPct` is an OPTIONAL additional annual cost — advisor + platform
+ * (+ trustee) fees, which are NOT in the fund price — applied as a compounding
+ * time-based drag so the curve shows performance net of those advice costs.
  *
  * @param {{ holdings: Array<{dates:number[],prices:number[],weight:number}> }} inputs
  * @param {number[]} axis     - ascending timestamps (the shared x-axis)
  * @param {number} startMs    - window start (base date for rebasing)
+ * @param {number} dragPct    - additional annual fee % (advisor/platform/trustee)
  * @returns {Array<{index:number,pctReturn:number,raw:number}|null>}
  */
-function computeNetIndex(inputs, axis, startMs) {
+function computeNetIndex(inputs, axis, startMs, dragPct = 0) {
   const { holdings } = inputs;
+  const YEAR_MS = 365.25 * 24 * 3600 * 1000;
 
   // Base price per holding = price as of the window start; if the holding
   // starts mid-window, fall back to its first in-window price.
@@ -210,7 +212,8 @@ function computeNetIndex(inputs, axis, startMs) {
     if (presentWeight <= 0) return null;
 
     const composite = acc / presentWeight;     // ~1.0 at the base date
-    const index = parseFloat((composite * 100).toFixed(4));
+    const fee = dragPct > 0 ? Math.pow(1 - dragPct / 100, Math.max(0, t - startMs) / YEAR_MS) : 1;
+    const index = parseFloat((composite * 100 * fee).toFixed(4));
     return { index, pctReturn: parseFloat((index - 100).toFixed(4)), raw: composite };
   });
 }
@@ -238,6 +241,11 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
   }), []);
 
   const [timeframe, setTimeframe] = useState('1y');
+
+  // Additional advice costs (% p.a.) not reflected in fund prices — advisor +
+  // platform (+ trustee for pensions). Applied as a compounding drag on the curve.
+  const [costs, setCosts] = useState({ advisor: 0, platform: 0, trustee: 0 });
+  const totalDrag = (parseFloat(costs.advisor) || 0) + (parseFloat(costs.platform) || 0) + (parseFloat(costs.trustee) || 0);
 
   // ── Series selections ──────────────────────────────────────────────────────
   // Each selection carries:
@@ -601,7 +609,7 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     if (axis.length < 2) return [];
 
     // 4. Compute each selection's net-of-fees index on the shared axis.
-    const seriesResults = inputs.map(inp => (inp ? computeNetIndex(inp, axis, startMs) : null));
+    const seriesResults = inputs.map(inp => (inp ? computeNetIndex(inp, axis, startMs, totalDrag) : null));
 
     // 5. Assemble chart points with REAL date labels.
     //    series_N : net-of-fee index (base 100) · pct_N : % return · raw_N : composite (cross-slice)
@@ -609,6 +617,7 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     return axis.map((t, i) => {
       const d = new Date(t);
       const point = {
+        t,   // unique x key (label strings repeat on long ranges, breaking the drag)
         name: dayLabels
           ? d.toLocaleString('default', { month: 'short', day: 'numeric' })
           : d.toLocaleString('default', { month: 'short', year: '2-digit' }),
@@ -621,7 +630,7 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
       });
       return point;
     });
-  }, [selections, timeframe, historicalData, pricesData, TIMEFRAMES, resolveSeriesInputs]);
+  }, [selections, timeframe, historicalData, pricesData, TIMEFRAMES, resolveSeriesInputs, totalDrag]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // SERIES SUMMARY STATS  —  FE Analytics status badges
@@ -705,8 +714,8 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     setIsSelecting(false);
 
     if (refAreaLeft && refAreaRight && refAreaLeft !== refAreaRight) {
-      let startIdx = chartData.findIndex(d => d.name === refAreaLeft);
-      let endIdx   = chartData.findIndex(d => d.name === refAreaRight);
+      let startIdx = chartData.findIndex(d => d.t === refAreaLeft);
+      let endIdx   = chartData.findIndex(d => d.t === refAreaRight);
 
       if (startIdx === -1 || endIdx === -1) {
         setRefAreaLeft(null); setRefAreaRight(null); setCustomStats(null);
@@ -714,8 +723,8 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
       }
 
       if (startIdx > endIdx) [startIdx, endIdx] = [endIdx, startIdx];
-      setRefAreaLeft(chartData[startIdx].name);
-      setRefAreaRight(chartData[endIdx].name);
+      setRefAreaLeft(chartData[startIdx].t);
+      setRefAreaRight(chartData[endIdx].t);
 
       const stats = selections.map((sel, idx) => {
         const startRaw = chartData[startIdx]?.[`raw_${idx}`];
@@ -772,6 +781,11 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     // Timeframe
     timeframe,
     setTimeframe,
+
+    // Cost adjustments (advisor / platform / trustee, % p.a.)
+    costs,
+    setCosts,
+    totalDrag,
 
     // Selections
     selections,
