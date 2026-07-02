@@ -133,25 +133,43 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
   };
 
   // ── Directives (with margin rounding) ────────────────────────────────────────
-  const roundUnits = (raw) => {
+  // The rounding buffer targets a consistent ~value (not a blunt 5 units), so a
+  // high-priced fund (e.g. S&P ~$600/unit) rounds in whole units while a cheap
+  // one still rounds in larger steps. Buys round DOWN, sells round UP.
+  const MARGIN_VALUE = 500;
+  const marginIncrement = (price) => {
+    const p = parseFloat(price) || 0;
+    if (p <= 0) return 1;
+    const steps = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
+    let inc = 1;
+    for (const s of steps) { if (s * p <= MARGIN_VALUE) inc = s; else break; }
+    return inc;
+  };
+  const roundUnits = (raw, price) => {
     if (rounding === 'exact' || !isFinite(raw)) return raw;
-    return raw >= 0 ? Math.floor(raw / 5) * 5 : -Math.ceil(Math.abs(raw) / 5) * 5;   // buy↓5, sell↑5
+    const inc = marginIncrement(price);
+    return raw >= 0 ? Math.floor(raw / inc) * inc : -Math.ceil(Math.abs(raw) / inc) * inc;
   };
 
   const directives = useMemo(() => {
     return leaves.map((l) => {
       const n = l.node;
+      // Only the synthetic Cash line (ISIN "Cash") is charge-free — real money-
+      // market FUNDS are securities the bank still charges on.
+      const cash = isCash(n.isin) || String(n.name || '').trim().toLowerCase() === 'cash';
       const curBase  = baseVal(n);
       const idealBase = totals.investable * (l.effTarget / 100);
       const deltaBase = idealBase - curBase;
       const price = parseFloat(n.price) || 0;
       const rawUnits = price > 0 ? (deltaBase * resolveRate(base, n.ccy, liveRates)) / price : 0;
-      const units = roundUnits(rawUnits);
+      const units = roundUnits(rawUnits, price);
       const tradedNat = units * price;
-      const f = computeTransactionFee(Math.abs(tradedNat), n.ccy, n.feeClass, bank, liveRates, schedule);
-      // Skip negligible drift (< half a unit), or a buy that rounded down to 0.
+      const tradedBase = Math.abs(tradedNat) * rate(n.ccy);
+      // Cash is not a security — no transaction charge.
+      const f = cash ? { fee: 0, rate: 0, appliedMin: false } : computeTransactionFee(Math.abs(tradedNat), n.ccy, n.feeClass, bank, liveRates, schedule);
+      const feeBase = f.fee * rate(n.ccy);
       const skip = Math.abs(rawUnits) < 0.5 || Math.abs(units) < 1;
-      return { id: n.id, name: n.name, modelName: l.modelName, ccy: n.ccy, units, tradedNat, feeBase: f.fee * rate(n.ccy), rate: f.rate, appliedMin: f.appliedMin, isBuy: units > 0, skip };
+      return { id: n.id, name: n.name, modelName: l.modelName, ccy: n.ccy, units, tradedNat, tradedBase, feeBase, rate: f.rate, appliedMin: f.appliedMin, cash, isBuy: units > 0, skip };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaves, totals.investable, base, liveRates, bank, schedule, rounding]);
@@ -370,7 +388,9 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                 <div className="space-y-1 text-xs border-t border-gray-100/60 pt-2">
                   <div className="flex justify-between"><span className="text-gray-400">Units:</span><span className="font-mono font-bold">{d.isBuy ? '+' : ''}{d.units}</span></div>
                   <div className="flex justify-between"><span className="text-gray-400">Trade ({d.ccy}):</span><span className="font-mono text-gray-600">{sym(d.ccy)}{fmtN(Math.abs(d.tradedNat), 0)}</span></div>
-                  <div className="flex justify-between border-t border-gray-100 pt-1 mt-1"><span className="text-gray-500 font-semibold">Charge {d.appliedMin ? '(min)' : `(${(d.rate * 100).toFixed(3)}%)`}:</span><span className="font-mono font-bold text-brand3">{fmtBase(d.feeBase)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-400">{d.isBuy ? 'Before charges' : 'Proceeds before'}:</span><span className="font-mono text-gray-700">{fmtBase(d.tradedBase)}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500 font-semibold">Charge {d.cash ? '(cash · none)' : d.appliedMin ? '(min)' : `(${(d.rate * 100).toFixed(3)}%)`}:</span><span className="font-mono font-bold text-brand3">{d.feeBase > 0 ? (d.isBuy ? '+' : '−') : ''}{fmtBase(d.feeBase)}</span></div>
+                  <div className="flex justify-between border-t border-gray-100 pt-1 mt-1"><span className="text-gray-800 font-bold">{d.isBuy ? 'Cost after charges' : 'Net proceeds'}:</span><span className="font-mono font-bold text-gray-900">{fmtBase(d.isBuy ? d.tradedBase + d.feeBase : d.tradedBase - d.feeBase)}</span></div>
                 </div>
               </div>
             ))}
