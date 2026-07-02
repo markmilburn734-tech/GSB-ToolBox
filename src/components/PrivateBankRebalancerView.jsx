@@ -15,11 +15,17 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { resolveRate, computeTransactionFee, mapBankClass, isCash, CURRENCY_SYMBOLS, PB_CHARGES } from '../constants';
-import { Plus, Trash2, DollarSign, TrendingUp, Check, X, ChevronRight } from './Icons';
+import { Plus, Trash2, DollarSign, TrendingUp, Check, X, ChevronRight, Download } from './Icons';
 
 const CCYS = ['USD', 'GBP', 'EUR', 'AUD', 'CHF', 'AED'];
 const sym = (c) => CURRENCY_SYMBOLS[c] || (c === 'CHF' ? 'Fr ' : c + ' ');
 const uid = () => crypto.randomUUID();
+
+const Printer = ({ size = 14 }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
+  </svg>
+);
 
 export default function PrivateBankRebalancerView({ presets = {}, pricesData = {}, liveRates = {}, charges = null, currency = 'USD' }) {
   const schedule = charges || PB_CHARGES;
@@ -175,6 +181,72 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
   }, [leaves, totals.investable, base, liveRates, bank, schedule, rounding]);
 
   const totalFees = directives.reduce((s, d) => s + (d.skip ? 0 : d.feeBase), 0);
+
+  // ── Trade receipt (print + CSV) ──────────────────────────────────────────────
+  const activeDirectives = directives.filter((d) => !d.skip);
+  const buysBase  = activeDirectives.filter((d) => d.isBuy).reduce((s, d) => s + d.tradedBase, 0);
+  const sellsBase = activeDirectives.filter((d) => !d.isBuy).reduce((s, d) => s + d.tradedBase, 0);
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  const printReceipt = () => {
+    const when = new Date().toLocaleString('en-GB');
+    const rows = activeDirectives.map((d) => {
+      const after = d.isBuy ? d.tradedBase + d.feeBase : d.tradedBase - d.feeBase;
+      return `<tr>
+        <td>${esc(d.name)}${d.modelName ? `<div class="sub">${esc(d.modelName)}</div>` : ''}</td>
+        <td class="${d.isBuy ? 'buy' : 'sell'}">${d.isBuy ? 'BUY' : 'SELL'}</td>
+        <td class="r">${d.isBuy ? '+' : ''}${d.units}</td>
+        <td class="r">${d.ccy} ${fmtN(Math.abs(d.tradedNat), 0)}</td>
+        <td class="r">${fmtBase(d.tradedBase)}</td>
+        <td class="r">${d.feeBase > 0 ? (d.isBuy ? '+' : '-') : ''}${fmtBase(d.feeBase)}</td>
+        <td class="r b">${fmtBase(after)}</td></tr>`;
+    }).join('');
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Rebalance Instructions</title><style>
+      body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:32px;font-size:12px}
+      h1{font-size:18px;margin:0 0 2px} .meta{color:#666;font-size:11px;margin-bottom:16px}
+      .sum{display:flex;gap:26px;margin:12px 0 18px} .sum div{font-size:11px;color:#666} .sum b{display:block;color:#111;font-size:14px}
+      table{width:100%;border-collapse:collapse} th,td{padding:7px 8px;border-bottom:1px solid #e5e5e5;text-align:left;vertical-align:top}
+      th{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:.05em}
+      td.r,th.r{text-align:right;font-variant-numeric:tabular-nums} td.b{font-weight:bold}
+      .buy{color:#059669;font-weight:bold} .sell{color:#dc2626;font-weight:bold} .sub{color:#999;font-size:10px}
+      tfoot td{font-weight:bold;border-top:2px solid #111} .note{color:#999;font-size:10px;margin-top:16px}
+      @media print{body{margin:12px}}</style></head><body>
+      <h1>Private Bank Rebalance — Trade Instructions</h1>
+      <div class="meta">${esc(bank)} &middot; Base ${base} &middot; ${when}</div>
+      <div class="sum">
+        <div>Portfolio value<b>${fmtBase(totals.assetBase)}</b></div>
+        <div>Investable<b>${fmtBase(totals.investable)}</b></div>
+        <div>Total buys<b>${fmtBase(buysBase)}</b></div>
+        <div>Total sells<b>${fmtBase(sellsBase)}</b></div>
+        <div>Total charges<b>${fmtBase(totalFees)}</b></div>
+      </div>
+      <table><thead><tr><th>Holding</th><th>Action</th><th class="r">Units</th><th class="r">Trade</th><th class="r">Before</th><th class="r">Charge</th><th class="r">After</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="7">No trades required.</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="5">Total charges (${base})</td><td class="r"></td><td class="r">${fmtBase(totalFees)}</td></tr></tfoot></table>
+      <div class="note">Estimated instructions and charges for guidance only — charges use the ${esc(bank)} schedule at live FX. Verify before dealing.</div>
+      </body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) return;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 300);
+  };
+
+  const exportCSV = () => {
+    const head = ['Holding', 'Model', 'Action', 'Units', 'Currency', 'TradeNative', `Before(${base})`, `Charge(${base})`, `After(${base})`];
+    const lines = activeDirectives.map((d) => {
+      const after = d.isBuy ? d.tradedBase + d.feeBase : d.tradedBase - d.feeBase;
+      return [`"${String(d.name).replace(/"/g, '""')}"`, `"${d.modelName || ''}"`, d.isBuy ? 'BUY' : 'SELL',
+        d.units, d.ccy, Math.abs(d.tradedNat).toFixed(2), d.tradedBase.toFixed(2), d.feeBase.toFixed(2), after.toFixed(2)].join(',');
+    });
+    const link = document.createElement('a');
+    link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent([head.join(','), ...lines].join('\n'));
+    link.download = `pb_rebalance_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // ── Render helpers ────────────────────────────────────────────────────────────
   const skewBadge = (skew) => (
@@ -372,10 +444,14 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       {/* Directives */}
       {totalTarget > 0 && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3 mb-4">
             <div className="flex items-center gap-2"><TrendingUp size={18} className="text-brand" /><h3 className="font-bold text-gray-900">Rebalance directives & charges</h3>
-              <span className="text-[10px] text-gray-400 font-semibold">{rounding === 'margin' ? 'buys ↓5 · sells ↑5 units' : 'exact units'}</span></div>
-            <span className="text-sm font-bold text-gray-500">Total cost: <span className="text-brand3">{fmtBase(totalFees)}</span></span>
+              <span className="text-[10px] text-gray-400 font-semibold">{rounding === 'margin' ? 'buys round down · sells round up' : 'exact units'}</span></div>
+            <div className="flex items-center gap-2">
+              <button onClick={printReceipt} disabled={activeDirectives.length === 0} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200 disabled:opacity-40"><Printer size={14} /> Print trades</button>
+              <button onClick={exportCSV} disabled={activeDirectives.length === 0} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200 disabled:opacity-40"><Download size={14} /> CSV</button>
+              <span className="text-sm font-bold text-gray-500 ml-1">Total cost: <span className="text-brand3">{fmtBase(totalFees)}</span></span>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {directives.filter((d) => !d.skip).map((d) => (
