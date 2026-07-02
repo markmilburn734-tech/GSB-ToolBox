@@ -285,8 +285,8 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
             <input type="number" value={cashFlow} onChange={(e) => setCash(e.target.value)} placeholder="0" className="w-28 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold outline-none focus:border-brand" /></div>
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Units</label>
             <div className="flex bg-gray-50 border border-gray-200 rounded-xl p-0.5">
-              {[['margin', '±5 margin'], ['exact', 'Exact']].map(([k, l]) => (
-                <button key={k} onClick={() => setRounding(k)} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold ${rounding === k ? 'bg-white text-brand shadow-sm' : 'text-gray-500'}`}>{l}</button>
+              {[['margin', 'Margin'], ['exact', 'Exact']].map(([k, l]) => (
+                <button key={k} onClick={() => setRounding(k)} title={k === 'margin' ? 'Round trades to a sensible whole-unit margin (buys down, sells up) — step scales with unit price' : 'Exact fractional units'} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold ${rounding === k ? 'bg-white text-brand shadow-sm' : 'text-gray-500'}`}>{l}</button>
               ))}
             </div></div>
           <div className="relative">
