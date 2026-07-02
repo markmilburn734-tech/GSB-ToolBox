@@ -139,17 +139,13 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
   };
 
   // ── Directives (with margin rounding) ────────────────────────────────────────
-  // The rounding buffer targets a consistent ~value (not a blunt 5 units), so a
-  // high-priced fund (e.g. S&P ~$600/unit) rounds in whole units while a cheap
-  // one still rounds in larger steps. Buys round DOWN, sells round UP.
-  const MARGIN_VALUE = 500;
+  // Price-banded rounding step so high-priced funds round finely: over £100/unit
+  // → 1 unit, £50–100 → 2 units, under £50 → 5 units. Buys round DOWN, sells UP.
   const marginIncrement = (price) => {
     const p = parseFloat(price) || 0;
-    if (p <= 0) return 1;
-    const steps = [1, 5, 10, 25, 50, 100, 250, 500, 1000];
-    let inc = 1;
-    for (const s of steps) { if (s * p <= MARGIN_VALUE) inc = s; else break; }
-    return inc;
+    if (p > 100) return 1;
+    if (p >= 50) return 2;
+    return 5;
   };
   const roundUnits = (raw, price) => {
     if (rounding === 'exact' || !isFinite(raw)) return raw;
