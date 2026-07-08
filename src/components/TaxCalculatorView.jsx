@@ -109,7 +109,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                     </div>
                     <p className="text-gray-500 ml-1">2024/25 Logic • 0.5% Market Volatility Buffer • UK rules, figures in GBP</p>
                 </div>
-                <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col min-w-[200px]">
+                <div className="bg-white/75 backdrop-blur-smp-5 rounded-xl shadow-sm border border-gray-200 flex flex-col min-w-[200px]">
                     <label className="text-xs font-bold uppercase text-gray-400 mb-1 flex items-center gap-1">
                         <TrendingUp className="w-3 h-3" /> Estimated Tax Owed
                     </label>
@@ -122,7 +122,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
             {/* Inputs & Controls */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* Income Input */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <div className="bg-white/75 backdrop-blur-smp-6 rounded-2xl shadow-sm border border-gray-200">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Gross Annual Income</label>
                     <div className="relative">
                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
@@ -138,7 +138,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                 </div>
 
                 {/* Allowance Slider */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+                <div className="bg-white/75 backdrop-blur-smp-6 rounded-2xl shadow-sm border border-gray-200">
                     <div className="flex justify-between items-center mb-4">
                         <label className="block text-sm font-medium text-gray-700">Allowance Used</label>
                         <span className="font-mono font-bold text-gray-900 bg-gray-100 px-2 py-1 rounded text-sm">
@@ -172,7 +172,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                             }}
                             className={`w-12 h-6 rounded-full transition-all duration-300 relative ${isJoint ? 'bg-brand3' : 'bg-white/20'}`}
                         >
-                            <div className={`absolute top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 shadow-sm ${isJoint ? 'left-7' : 'left-1'}`} />
+                            <div className={`absolute top-1 bg-white/75 backdrop-blur-smw-4 h-4 rounded-full transition-transform duration-300 shadow-sm ${isJoint ? 'left-7' : 'left-1'}`} />
                         </button>
                     </div>
                     <div className="mt-4 border-t border-white/10 pt-4">
@@ -185,7 +185,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
             </div>
 
             {/* Middle Control Bar */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+            <div className="bg-white/75 backdrop-blur-smp-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
                 <div className="flex gap-8 w-full md:w-auto">
                     <div>
                         <span className="block text-xs font-bold uppercase text-gray-400 mb-1">Total Buffered Gain</span>
@@ -217,7 +217,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                         {addMenuOpen && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />
-                                <div className="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden animate-in zoom-in-95 duration-100 origin-top-right">
+                                <div className="absolute right-0 mt-2 w-72 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden animate-in zoom-in-95 duration-100 origin-top-right">
                                     <button onClick={addBlankRow} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100">
                                         <div className="bg-gray-100 p-1.5 rounded-lg text-gray-500"><Plus className="w-4 h-4" /></div>
                                         <div>
@@ -300,7 +300,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                                                 step="0.0001" 
                                                 value={asset.units} 
                                                 onChange={(e) => handleUpdateAsset(asset.id, 'units', e.target.value)} 
-                                                className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono shadow-sm focus:border-brand/30 outline-none" 
+                                                className="w-full bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono shadow-sm focus:border-brand/30 outline-none" 
                                             />
                                         </td>
                                         <td className="px-4 py-4">
@@ -309,7 +309,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                                                 step="0.01" 
                                                 value={asset.ogPrice} 
                                                 onChange={(e) => handleUpdateAsset(asset.id, 'ogPrice', e.target.value)} 
-                                                className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono shadow-sm focus:border-brand/30 outline-none" 
+                                                className="w-full bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono shadow-sm focus:border-brand/30 outline-none" 
                                             />
                                         </td>
                                         <td className="px-4 py-4">
@@ -318,7 +318,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                                                 step="0.01" 
                                                 value={asset.currentPrice} 
                                                 onChange={(e) => handleUpdateAsset(asset.id, 'currentPrice', e.target.value)} 
-                                                className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono shadow-sm focus:border-brand/30 outline-none" 
+                                                className="w-full bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono shadow-sm focus:border-brand/30 outline-none" 
                                             />
                                         </td>
                                         <td className="px-6 py-4 text-right">

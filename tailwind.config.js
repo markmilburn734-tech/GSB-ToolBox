@@ -20,7 +20,7 @@ export default {
         // IBM Plex superfamily — professional, characterful, purpose-matched.
         sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'Arial', 'sans-serif'],
         serif: ['"IBM Plex Serif"', 'Georgia', 'Cambria', 'serif'],
-        mono: ['"IBM Plex Mono"', '"Cascadia Code"', 'Consolas', 'ui-monospace', 'Menlo', 'monospace'],
+        mono: ['"Cascadia Code"', '"Cascadia Mono"', 'Consolas', 'ui-monospace', 'Menlo', 'monospace'],
       },
       // Squared-off corners: crisp, premium feel (pills keep rounded-full).
       borderRadius: {

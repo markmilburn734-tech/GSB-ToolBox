@@ -229,7 +229,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
               {addOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setAddOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-gray-200 shadow-xl p-2 z-20 space-y-0.5">
+                  <div className="absolute right-0 mt-2 w-56 bg-white/75 backdrop-blur-smrounded-xl border border-gray-200 shadow-xl p-2 z-20 space-y-0.5">
                     <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Quick add category</div>
                     {ASSET_TEMPLATES.map(t => (
                       <button key={t.name} onClick={() => addAsset(t)} className="w-full flex items-center justify-between px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 rounded-lg">
@@ -245,7 +245,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
           </div>
 
           {assets.map((a, i) => (
-            <div key={a.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 flex items-center gap-3">
+            <div key={a.id} className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-4 flex items-center gap-3">
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
               <input type="text" value={a.name} onChange={(e) => updateAsset(a.id, 'name', e.target.value)}
                 className="flex-1 min-w-0 font-semibold text-gray-800 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-brand outline-none text-sm py-0.5" />
@@ -272,7 +272,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
         {/* Assumptions */}
         <div className="lg:col-span-2">
           <h3 className="text-sm font-bold text-gray-800 mb-3">Assumptions</h3>
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
+          <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5 space-y-4">
             {[
               ['Current age', currentAge, setCurrentAge, 'yrs', 1],
               ['Inflation rate', inflation, setInflation, '%', 0.1],
@@ -303,7 +303,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
       </div>
 
       {/* Estate & IHT at forecast end */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
+      <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h3 className="text-sm font-bold text-gray-800 mb-0.5">Estate & IHT at age {forecastEnd}</h3>
@@ -318,11 +318,11 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
         <div className="flex flex-wrap items-end gap-3 mt-4 bg-gray-50 border border-gray-200 rounded-xl p-3">
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Life cover</label>
             <div className="relative w-32"><span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{symbol}</span>
-              <input type="number" step={10000} value={coverSum} onChange={(e) => setCoverSum(e.target.value === '' ? '' : parseFloat(e.target.value))} className="w-full pl-6 pr-2 py-1.5 bg-white border border-gray-200 rounded-lg font-mono text-sm outline-none" /></div></div>
+              <input type="number" step={10000} value={coverSum} onChange={(e) => setCoverSum(e.target.value === '' ? '' : parseFloat(e.target.value))} className="w-full pl-6 pr-2 py-1.5 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg font-mono text-sm outline-none" /></div></div>
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Type</label>
-            <select value={coverType} onChange={(e) => setCoverType(e.target.value)} className="px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-medium outline-none"><option>Whole of Life</option><option>Level Term</option><option>Decreasing Term</option></select></div>
+            <select value={coverType} onChange={(e) => setCoverType(e.target.value)} className="px-2 py-1.5 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg text-xs font-medium outline-none"><option>Whole of Life</option><option>Level Term</option><option>Decreasing Term</option></select></div>
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Term (yrs)</label>
-            <input type="number" disabled={coverType === 'Whole of Life'} value={coverTerm} onChange={(e) => setCoverTerm(e.target.value === '' ? '' : parseFloat(e.target.value))} className="w-20 py-1.5 px-2 bg-white border border-gray-200 rounded-lg font-mono text-sm outline-none disabled:bg-gray-100 disabled:text-gray-300" /></div>
+            <input type="number" disabled={coverType === 'Whole of Life'} value={coverTerm} onChange={(e) => setCoverTerm(e.target.value === '' ? '' : parseFloat(e.target.value))} className="w-20 py-1.5 px-2 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg font-mono text-sm outline-none disabled:bg-gray-100 disabled:text-gray-300" /></div>
           <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 pb-1.5"><input type="checkbox" checked={coverTrust} onChange={(e) => setCoverTrust(e.target.checked)} /> In trust</label>
           {termLapsed && <span className="text-[11px] font-bold text-rose-600 pb-1.5">⚠ Term lapses at age {n(currentAge) + n(coverTerm)} — no cover at {forecastEnd}</span>}
         </div>
@@ -330,13 +330,13 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
           <div className="bg-gray-50 rounded-xl p-4 border border-gray-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Estate at death</p><p className="text-xl font-bold text-gray-900 font-mono">{fmt(estateForIht)}</p></div>
           <div className="bg-rose-50 rounded-xl p-4 border border-rose-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Estimated IHT</p><p className="text-xl font-bold text-rose-600 font-mono">{fmt(ihtDue)}</p></div>
-          <div className="bg-white rounded-xl p-4 border border-gray-200"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">After cover</p><p className={`text-xl font-bold font-mono ${ihtAfterCover > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{ihtAfterCover > 0 ? fmt(ihtAfterCover) : 'Covered ✓'}</p></div>
+          <div className="bg-white/75 backdrop-blur-smrounded-xl p-4 border border-gray-200"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">After cover</p><p className={`text-xl font-bold font-mono ${ihtAfterCover > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>{ihtAfterCover > 0 ? fmt(ihtAfterCover) : 'Covered ✓'}</p></div>
           <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100"><p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Net to heirs</p><p className="text-xl font-bold text-emerald-600 font-mono">{fmt(netToHeirs)}</p></div>
         </div>
       </div>
 
       {/* Events & timeline (drag-and-drop) */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
+      <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
         <h3 className="text-sm font-bold text-gray-800 mb-1">Events & Timeline</h3>
         <p className="text-xs text-gray-400 mb-3">Drag an event onto the timeline. Drag a placed event to move it; click it to edit or delete.</p>
         <div className="flex flex-wrap gap-2 mb-4">
@@ -385,7 +385,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
             <div>
               <label className="block text-[10px] font-bold text-gray-400 uppercase">Age</label>
               <input type="number" value={selectedEvent.age} onChange={(e) => updateEvent(selectedEvent.id, 'age', e.target.value)}
-                className="w-20 px-2 py-1 bg-white border border-gray-200 rounded-lg text-sm font-mono outline-none focus:border-brand" />
+                className="w-20 px-2 py-1 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg text-sm font-mono outline-none focus:border-brand" />
             </div>
             {ETYPE[selectedEvent.type]?.amount && (
               <div>
@@ -393,7 +393,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
                 <div className="relative w-32">
                   <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{symbol}</span>
                   <input type="number" step={500} value={selectedEvent.amount} onChange={(e) => updateEvent(selectedEvent.id, 'amount', e.target.value)}
-                    className="w-full pl-5 pr-2 py-1 bg-white border border-gray-200 rounded-lg text-sm font-mono outline-none focus:border-brand" />
+                    className="w-full pl-5 pr-2 py-1 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg text-sm font-mono outline-none focus:border-brand" />
                 </div>
               </div>
             )}
@@ -406,7 +406,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
       </div>
 
       {/* Stacked bar projection */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
+      <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5 mt-6">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <h3 className="text-sm font-bold text-gray-800">How assets change over time</h3>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-bold text-gray-500">

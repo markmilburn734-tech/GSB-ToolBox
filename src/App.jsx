@@ -213,7 +213,7 @@ export default function App() {
                                 <button
                                     onClick={() => setCurOpen((o) => !o)}
                                     aria-label="Display currency"
-                                    className="flex items-center gap-2 cursor-pointer bg-transparent border border-brand3 text-white font-bold text-xs rounded-md pl-3 pr-2 py-1.5 outline-none hover:bg-white/5 transition-colors"
+                                    className="flex items-center gap-2 cursor-pointer bg-transparent border border-white text-white font-bold text-xs rounded-md pl-3 pr-2 py-1.5 outline-none hover:bg-white/5 transition-colors"
                                 >
                                     <span>{CURRENCY_SYMBOLS[activeCurrency]}</span> {activeCurrency}
                                     <ChevronRight size={14} className={`text-white/70 transition-transform ${curOpen ? '-rotate-90' : 'rotate-90'}`} />
@@ -221,15 +221,15 @@ export default function App() {
                                 {curOpen && (
                                     <>
                                         <div className="fixed inset-0 z-10" onClick={() => setCurOpen(false)} />
-                                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg border border-gray-200 shadow-xl p-1 z-20 animate-in fade-in slide-in-from-top-1 duration-150">
+                                        <div className="absolute right-0 mt-2 w-32 bg-brand-tint rounded-lg border border-brand6/30 shadow-xl p-1 z-20 animate-in fade-in slide-in-from-top-1 duration-150">
                                             {Object.keys(CURRENCY_SYMBOLS).map((curr) => (
                                                 <button
                                                     key={curr}
                                                     onClick={() => { setActiveCurrency(curr); setCurOpen(false); }}
                                                     className={`w-full text-left px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-colors ${
                                                         activeCurrency === curr
-                                                            ? 'bg-brand3/10 text-brand3'
-                                                            : 'text-gray-600 hover:bg-brand3/5 hover:text-brand3'
+                                                            ? 'bg-brand6/40 text-brand'
+                                                            : 'text-brand/70 hover:bg-brand6/25 hover:text-brand'
                                                     }`}
                                                 >
                                                     <span className="w-5 inline-block">{CURRENCY_SYMBOLS[curr]}</span> {curr}
