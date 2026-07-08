@@ -19,6 +19,8 @@ export default {
       fontFamily: {
         // Clean, Arial-esque native stack — nicer than Arial, no web-font load.
         sans: ['"Segoe UI"', 'system-ui', '-apple-system', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        // Refined monospace for codes/figures — leads with Cascadia (Win 11), then Consolas.
+        mono: ['"Cascadia Code"', '"Cascadia Mono"', 'Consolas', 'ui-monospace', 'Menlo', 'monospace'],
       },
       // Squared-off corners: crisp, premium feel (pills keep rounded-full).
       borderRadius: {
