@@ -197,8 +197,7 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
       <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <div className="bg-brand p-2 rounded-lg"><DollarSign className="w-6 h-6 text-white" /></div>
-            <h1 className="text-3xl font-bold text-gray-800 tracking-tight">Cash Flow Planner</h1>
+            <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Cash Planner</h1>
           </div>
           <p className="text-gray-500 ml-1">Project assets, events & drawdown to the forecast-end age · {currency}</p>
         </div>

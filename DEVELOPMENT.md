@@ -70,10 +70,10 @@ Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last 
 - **Brand:** `brand`/`brand2` `#573960` (purple), `brand3–5` `#ff3154` (accent), `brand6` `#816a88`, `brand-tint` `#f4f1f5` (light wash). `shadow-brand` = soft purple shadow.
 - **Font:** native Arial-esque stack (`Segoe UI` → `system-ui` → Helvetica/Arial) — no web-font load. Body uses `font-sans`.
 - **Squared corners:** the `borderRadius` scale is overridden small (2xl ≈ 6px, 3xl ≈ 8px) so all cards read crisp; `rounded-full` (pills/avatars) unaffected. Sharpen further by lowering these values.
-- **GSB watermark:** a fixed, **centred**, low-opacity (`0.08`) dark-purple (`#2e1c34`) `<GSB>` logo with a drop-shadow sits behind content (`App.jsx`, `z-0`); `main` is `z-10`. `Icon`/`GSB` take a `strokeWidth` prop (watermark uses `0.7`). Centred behind the `max-w-7xl` column, so it's mostly visible in the side gutters.
-- **Header logo:** deep-purple gradient tile (`from-brand to-#2e1c34`) with the mark in white + `shadow-brand`.
-- **Tabs:** primary tabs (`TabButton`) = purple underline; **sub-tabs active = pink** (`bg-brand3/10 text-brand3 ring-brand3/20`) on white.
-- **No decorative icon tiles:** the old washed `bg-brand6` icon squares at view headers (Rebalancer, PB, Portfolios) were removed — titles/inputs stand alone.
+- **Top banner:** dark-purple (`#2e1c34`) sticky nav; wordmark + tabs in white, logo in a glassy `white/10` tile, currency `<select>` glassy. Brand-gradient accent line along its bottom edge.
+- **GSB watermark:** a fixed, **centred**, low-opacity (`0.11`) very-dark-purple (`#1f1226`) `<GSB>` logo with a drop-shadow sits behind content (`App.jsx`, `z-0`); `main` is `z-10`. `Icon`/`GSB` take a `strokeWidth` prop (watermark uses `0.7`). Centred behind the `max-w-7xl` column, so it's mostly visible in the side gutters.
+- **Tabs:** primary tabs (`TabButton`) = white text + **pink** (`brand3`) active underline on the dark banner; **sub-tabs active = pink** (`bg-brand3/10 text-brand3 ring-brand3/20`) on the white sub-bar.
+- **Unified view headers:** every view now leads with the same boxless pattern — `text-2xl font-bold text-gray-900 tracking-tight` title + a `text-sm text-gray-500` subtitle. The old icon tiles/boxes (washed `bg-brand6` **and** the `bg-brand` ones on CGT/IHT/Cash) were all removed. Add a title in this style to any new view.
 
 ---
 

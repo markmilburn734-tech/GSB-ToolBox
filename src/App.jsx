@@ -155,24 +155,24 @@ export default function App() {
             {/* ── GSB brand watermark (fixed, centred behind everything) ─── */}
             <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden flex items-center justify-center">
                 <div
-                    className="opacity-[0.08]"
-                    style={{ filter: 'drop-shadow(0 16px 34px rgba(45,28,52,0.55))' }}
+                    className="opacity-[0.11]"
+                    style={{ filter: 'drop-shadow(0 16px 34px rgba(26,15,31,0.6))' }}
                 >
-                    <GSB size={720} color="#2e1c34" strokeWidth={0.7} />
+                    <GSB size={720} color="#1f1226" strokeWidth={0.7} />
                 </div>
             </div>
 
-            {/* ── Navigation Header ──────────────────────────────────────── */}
-            <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+            {/* ── Navigation Header (dark purple banner) ─────────────────── */}
+            <nav className="sticky top-0 z-40 bg-[#2e1c34] border-b border-black/20 shadow-md">
                 {/* Smooth brand accent line along the bottom edge */}
                 <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-brand via-brand6 to-brand3" />
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex items-center justify-between h-16">
- 
+
                         {/* Left: Logo + Tabs */}
                         <div className="flex items-center gap-8">
-                            <div className="font-bold text-xl text-gray-900 flex items-center gap-2">
-                                <div className="w-9 h-9 bg-gradient-to-br from-brand to-[#2e1c34] rounded-lg flex items-center justify-center text-white shadow-brand">
+                            <div className="font-bold text-xl text-white flex items-center gap-2">
+                                <div className="w-9 h-9 bg-white/10 ring-1 ring-white/15 rounded-lg flex items-center justify-center text-white">
                                     <GSB size={20} color="white" />
                                 </div>
                                 GSB Toolbox
@@ -207,25 +207,25 @@ export default function App() {
                                     <RefreshCw size={12} /> Syncing Data…
                                 </span>
                             ) : (
-                                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
                                     <Check size={14} /> Live
                                 </span>
                             )}
- 
+
                             <div className="relative">
                                 <select
                                     value={activeCurrency}
                                     onChange={(e) => setActiveCurrency(e.target.value)}
                                     aria-label="Display currency"
-                                    className="appearance-none cursor-pointer bg-brand-tint border border-brand6/30 text-brand font-bold text-xs rounded-md pl-3 pr-8 py-1.5 outline-none hover:border-brand6/60 focus:border-brand transition-colors"
+                                    className="appearance-none cursor-pointer bg-white/10 border border-white/20 text-white font-bold text-xs rounded-md pl-3 pr-8 py-1.5 outline-none hover:border-white/40 focus:border-white transition-colors"
                                 >
                                     {Object.keys(CURRENCY_SYMBOLS).map((curr) => (
-                                        <option key={curr} value={curr}>
+                                        <option key={curr} value={curr} className="text-gray-900">
                                             {CURRENCY_SYMBOLS[curr]} {curr}
                                         </option>
                                     ))}
                                 </select>
-                                <ChevronRight size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-brand6" />
+                                <ChevronRight size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-white/70" />
                             </div>
                         </div>
                     </div>

@@ -330,6 +330,11 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
 
     return (
         <div className="max-w-7xl mx-auto px-4 print:max-w-full print:px-0">
+            {/* Page heading */}
+            <div className="mb-6 print:hidden">
+                <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Standard Rebalancer</h2>
+                <p className="text-sm text-gray-500">Multi-asset rebalance in a single display currency</p>
+            </div>
             {/* Top Toolbar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm print:hidden">
                 <div className="flex items-center gap-4 flex-1">

@@ -388,7 +388,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 mb-5 shadow-sm">
         <div className="flex items-center gap-3">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Private Bank Rebalancer</h2>
+            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Private Bank Rebalancer</h2>
             <p className="text-xs text-gray-400">Multi-currency · live FX · {bank} charges</p>
           </div>
         </div>
