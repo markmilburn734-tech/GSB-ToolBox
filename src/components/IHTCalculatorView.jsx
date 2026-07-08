@@ -212,7 +212,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
             </div>
 
             {/* Estate assets */}
-            <div className="bg-white rounded-2xl shadow-sm border border-brand overflow-hidden mb-6">
+            <div className="bg-white/75 backdrop-blur-sm rounded-2xl shadow-sm border border-brand overflow-hidden mb-6">
                 <div className="px-6 py-3 border-b border-gray-100"><h3 className="text-sm font-bold text-gray-800">Estate assets</h3></div>
                 <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[900px]">
                     <thead><tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-wider"><th className="px-6 py-4">Asset</th><th className="px-4 py-4 w-24">Units</th><th className="px-4 py-4 w-36">Value ({symbol})</th><th className="px-4 py-4 w-52">IHT status</th><th className="px-4 py-4 w-24">Relief %</th><th className="px-6 py-4 text-right">Taxable</th></tr></thead>
@@ -239,7 +239,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
             </div>
 
             {/* Gifts */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="bg-white/75 backdrop-blur-sm rounded-2xl shadow-sm border border-brand p-6 mb-6">
                 <div className="flex items-center justify-between mb-3">
                     <div><h3 className="text-sm font-bold text-gray-800">Lifetime gifts (last 7 years)</h3><p className="text-xs text-gray-400">Net of exemptions (£3k annual, wedding, small gifts). Tax tapers 3–7 yrs, then falls out at 7.</p></div>
                     <button onClick={addGift} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200"><Plus size={13} /> Add gift</button>
@@ -269,7 +269,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
             </div>
 
             {/* Life assurance */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="bg-white/75 backdrop-blur-sm rounded-2xl shadow-sm border border-brand p-6">
                 <div className="flex items-center justify-between mb-3">
                     <div><h3 className="text-sm font-bold text-gray-800">Life assurance (cover the liability)</h3><p className="text-xs text-gray-400">Policies <b>in trust</b> pay outside the estate and offset the IHT; <b>not in trust</b> adds to the estate.</p></div>
                     <button onClick={addPolicy} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200"><Plus size={13} /> Add policy</button>

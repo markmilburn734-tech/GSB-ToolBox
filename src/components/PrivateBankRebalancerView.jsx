@@ -390,7 +390,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
         <p className="text-sm text-gray-500">Multi-currency · live FX · {bank} charges</p>
       </div>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-end gap-4 bg-white p-5 rounded-2xl border border-gray-200 mb-5 shadow-sm">
+      <div className="flex flex-wrap items-end gap-4 bg-white/75 backdrop-blur-sm p-5 rounded-2xl border border-gray-200 mb-5 shadow-sm">
         <div className="flex flex-wrap items-end gap-3">
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Bank</label>
             <select value={bank} onChange={(e) => setBank(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none">{banks.map((b) => <option key={b} value={b}>{b}</option>)}</select></div>
@@ -436,7 +436,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       </div>
 
       {/* Holdings & models table */}
-      <div className="bg-white rounded-2xl border border-brand shadow-sm overflow-hidden mb-5">
+      <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-brand shadow-sm overflow-hidden mb-5">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px] text-left text-sm">
             <thead>
@@ -540,7 +540,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       </div>
 
       {/* Equity / Bond ratio optimiser */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-5">
+      <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5 mb-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <label className="flex items-center gap-2 text-sm font-bold text-gray-800 cursor-pointer">
             <input type="checkbox" checked={ratioOn} onChange={(e) => setRatioOn(e.target.checked)} className="w-4 h-4 accent-brand" />
@@ -573,7 +573,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       </div>
 
       {/* Loans */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-5">
+      <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5 mb-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-bold text-gray-800">Loans / Lombard facilities</h3>
           <button onClick={addLoan} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200"><Plus size={13} /> Add loan</button>
@@ -598,7 +598,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
 
       {/* Directives */}
       {(totalTarget > 0 || ratioOn) && (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+        <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3 mb-4">
             <div className="flex items-center gap-2"><TrendingUp size={18} className="text-brand" /><h3 className="font-bold text-gray-900">Rebalance directives & charges</h3>
               {ratioOn && opt && <span className="px-2 py-0.5 rounded bg-brand6 text-brand text-[10px] font-extrabold">{(parseFloat(eqTarget) || 0).toFixed(0)}/{(100 - (parseFloat(eqTarget) || 0)).toFixed(0)} ratio</span>}

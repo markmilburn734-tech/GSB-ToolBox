@@ -227,7 +227,7 @@ export default function PortfoliosView({ presets = {}, pricesData = {}, liveRate
                     </div>
 
                     {/* Holdings table */}
-                    <div className="bg-white rounded-2xl border border-brand shadow-sm overflow-hidden">
+                    <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-brand shadow-sm overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse min-w-[820px]">
                                 <thead>

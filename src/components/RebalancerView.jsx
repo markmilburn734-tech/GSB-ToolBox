@@ -336,7 +336,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                 <p className="text-sm text-gray-500">Multi-asset rebalance in a single display currency</p>
             </div>
             {/* Top Toolbar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm print:hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/75 backdrop-blur-sm p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm print:hidden">
                 <div className="flex items-center gap-4 flex-1">
                     <div className="flex-1 max-w-xs">
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Cash Flow Injection</label>
@@ -386,7 +386,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             </div>
 
             {/* Asset Allocation Matrix */}
-            <div className="bg-white rounded-2xl border border-brand shadow-sm overflow-hidden mb-6 print:shadow-none print:border-gray-300">
+            <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-brand shadow-sm overflow-hidden mb-6 print:bg-white print:shadow-none print:border-gray-300">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px] text-left border-collapse">
                         <thead>
@@ -503,7 +503,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
 
             {/* Rebalancing Strategy Engine */}
             {totalWeight > 0 && (
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in slide-in-from-bottom-3 duration-200 print:shadow-none print:border-gray-300">
+                <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in slide-in-from-bottom-3 duration-200 print:bg-white print:shadow-none print:border-gray-300">
                     
                     {/* Header & Controls */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4 mb-4">
