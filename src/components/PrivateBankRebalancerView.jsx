@@ -86,6 +86,12 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
     return hit ? hit[0] : '';
   };
 
+  // Negatives guard: prices are never negative; units never negative except a Cash
+  // line (which may legitimately hold a negative balance).
+  const isCashNode = (n) => isCash(n.isin) || String(n.name || '').trim().toLowerCase() === 'cash';
+  const clampUnits = (v, node) => (isCashNode(node) ? v : (parseFloat(v) < 0 ? '0' : v));
+  const clampPrice = (v) => (parseFloat(v) < 0 ? '0' : v);
+
   // Re-default fee categories when the bank changes.
   useEffect(() => {
     setItems((prev) => prev.map((it) => it.kind === 'asset'
@@ -464,8 +470,8 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                     <tr key={it.id} className="hover:bg-gray-50/40">
                       <td className="py-2 px-4"><input value={it.name} onChange={(e) => updItem(it.id, 'name', e.target.value)} className="w-full font-semibold text-gray-800 bg-transparent outline-none border-b border-transparent focus:border-brand" /></td>
                       <td className="py-2 px-2">{ccySelect(it.ccy, (e) => updItem(it.id, 'ccy', e.target.value))}</td>
-                      <td className="py-2 px-3 text-right"><input type="number" value={it.price} onChange={(e) => updItem(it.id, 'price', e.target.value)} className="w-20 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono" /></td>
-                      <td className="py-2 px-3 text-right"><input type="number" value={it.units} onChange={(e) => updItem(it.id, 'units', e.target.value)} className="w-24 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono" /></td>
+                      <td className="py-2 px-3 text-right"><input type="number" value={it.price} onChange={(e) => updItem(it.id, 'price', clampPrice(e.target.value))} className="w-20 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono" /></td>
+                      <td className="py-2 px-3 text-right"><input type="number" value={it.units} onChange={(e) => updItem(it.id, 'units', clampUnits(e.target.value, it))} className="w-24 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono" /></td>
                       <td className="py-2 px-3 text-right font-bold text-gray-900 font-mono">{fmtBase(b)}</td>
                       <td className="py-2 px-3 text-right font-mono text-gray-600">{cp.toFixed(1)}%</td>
                       <td className="py-2 px-3 text-center"><input type="number" step="0.01" value={it.target} onChange={(e) => updItem(it.id, 'target', e.target.value)} className="w-16 text-center bg-gray-50 border border-gray-100 rounded-md px-1 py-1 outline-none font-bold text-xs" /></td>
@@ -508,8 +514,8 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                     <tr key={ch.id} className="hover:bg-gray-50/40">
                       <td className="py-1.5 px-4 pl-9"><input value={ch.name} onChange={(e) => updChild(it.id, ch.id, 'name', e.target.value)} className="w-full text-xs text-gray-700 bg-transparent outline-none border-b border-transparent focus:border-brand" /></td>
                       <td className="py-1.5 px-2">{ccySelect(ch.ccy, (e) => updChild(it.id, ch.id, 'ccy', e.target.value))}</td>
-                      <td className="py-1.5 px-3 text-right"><input type="number" value={ch.price} onChange={(e) => updChild(it.id, ch.id, 'price', e.target.value)} className="w-20 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono text-xs" /></td>
-                      <td className="py-1.5 px-3 text-right"><input type="number" value={ch.units} onChange={(e) => updChild(it.id, ch.id, 'units', e.target.value)} className="w-24 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono text-xs" /></td>
+                      <td className="py-1.5 px-3 text-right"><input type="number" value={ch.price} onChange={(e) => updChild(it.id, ch.id, 'price', clampPrice(e.target.value))} className="w-20 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono text-xs" /></td>
+                      <td className="py-1.5 px-3 text-right"><input type="number" value={ch.units} onChange={(e) => updChild(it.id, ch.id, 'units', clampUnits(e.target.value, ch))} className="w-24 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono text-xs" /></td>
                       <td className="py-1.5 px-3 text-right font-mono text-gray-700 text-xs">{fmtBase(b)}</td>
                       <td className="py-1.5 px-3 text-right font-mono text-gray-500 text-xs">{cp.toFixed(1)}%</td>
                       <td className="py-1.5 px-3 text-center">

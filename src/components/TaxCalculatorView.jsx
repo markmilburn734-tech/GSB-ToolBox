@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Trash2, TrendingUp, DollarSign, GSB } from './Icons'; // Assuming these are standard across your app
+import { CGT as TAX_CONSTANTS } from '../constants'; // 2024/25 rates/bands — edit in constants.js
 
 export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pricesData = {} }) {
     // --- State Management ---
@@ -8,15 +9,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
     const [isJoint, setIsJoint] = useState(false);
     const [addMenuOpen, setAddMenuOpen] = useState(false);
 
-    const TAX_CONSTANTS = {
-        LR_TAX: 0.18,
-        HR_TAX: 0.24,
-        BASE_ALLOWANCE: 3000,
-        BASIC_RATE_LMT: 50270,
-        PERS_ALLOW: 12570,
-        MARKET_BUFFER: 0.005 
-    };
-    
+
     // Initial Asset State
     const [assets, setAssets] = useState([]);
 

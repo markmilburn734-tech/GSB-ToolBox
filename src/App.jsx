@@ -12,16 +12,17 @@
 //   5. Removed unused `Papa` import (parsing lives entirely in api.js).
 // ─────────────────────────────────────────────────────────────────────────────
  
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense, lazy } from 'react';
  
-import RebalancerView            from './components/RebalancerView';
-import PrivateBankRebalancerView from './components/PrivateBankRebalancerView';
-import MarketPulseView          from './components/MarketPulseView';
-import PerformanceAnalyticsView from './components/PerformanceAnalyticsView';
-import PortfoliosView           from './components/PortfoliosView';
-import TaxCalculatorView        from './components/TaxCalculatorView';
-import IHTCalculatorView        from './components/IHTCalculatorView';
-import CashCalView              from './components/CashCalView';
+// Code-split: each view is its own chunk — only the visited tab's bundle loads.
+const RebalancerView            = lazy(() => import('./components/RebalancerView'));
+const PrivateBankRebalancerView = lazy(() => import('./components/PrivateBankRebalancerView'));
+const MarketPulseView           = lazy(() => import('./components/MarketPulseView'));
+const PerformanceAnalyticsView  = lazy(() => import('./components/PerformanceAnalyticsView'));
+const PortfoliosView            = lazy(() => import('./components/PortfoliosView'));
+const TaxCalculatorView         = lazy(() => import('./components/TaxCalculatorView'));
+const IHTCalculatorView         = lazy(() => import('./components/IHTCalculatorView'));
+const CashCalView               = lazy(() => import('./components/CashCalView'));
 import { TabButton }            from './components/TabButton';
 import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase, DollarSign, ChevronRight } from './components/Icons';
  
@@ -60,6 +61,9 @@ export default function App() {
     const [activeTab,       setActiveTab]       = useState('rebalancer');
     const [activeCurrency,  setActiveCurrency]  = useState('USD');
     const [curOpen,         setCurOpen]         = useState(false);
+    // Tabs visited this session stay mounted (hidden) so their inputs persist
+    // across tab switches. A full page refresh clears this (in-memory only).
+    const [visited,         setVisited]         = useState({ rebalancer: true });
     const [pricesData,      setPricesData]      = useState({});
     const [historicalData,  setHistoricalData]  = useState({});
     /** @type {[import('./constants').InitialPresets, Function]} */
@@ -90,6 +94,7 @@ export default function App() {
 
     const goTo = (tab) => {
         setActiveTab(tab);
+        setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }));
         if (REBAL_TABS.includes(tab))     setLastRebalTab(tab);
         if (ANALYTICS_TABS.includes(tab)) setLastAnalyticsTab(tab);
         if (CALC_TABS.includes(tab))      setLastCalcTab(tab);
@@ -283,75 +288,99 @@ export default function App() {
             <main className="relative z-10 py-6">
                 {/* Rebalancer stays mounted so entries persist across tab switches */}
                 <div className={activeTab === 'rebalancer' ? '' : 'hidden'}>
-                    <RebalancerView
-                        presets={presets}
-                        symbol={symbol}
-                        currency={activeCurrency}
-                        setActiveCurrency={setActiveCurrency}
-                        pricesData={pricesData}
-                        liveRates={liveRates}
-                    />
+                    {visited.rebalancer && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <RebalancerView
+                                presets={presets}
+                                symbol={symbol}
+                                currency={activeCurrency}
+                                setActiveCurrency={setActiveCurrency}
+                                pricesData={pricesData}
+                                liveRates={liveRates}
+                            />
+                        </Suspense>
+                    )}
                 </div>
 
-                {activeTab === 'pbrebalancer' && (
-                    <PrivateBankRebalancerView
-                        presets={presets}
-                        pricesData={pricesData}
-                        liveRates={liveRates}
-                        charges={charges}
-                        currency={activeCurrency}
-                    />
-                )}
+                <div className={activeTab === 'pbrebalancer' ? '' : 'hidden'}>
+                    {visited.pbrebalancer && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <PrivateBankRebalancerView
+                                presets={presets}
+                                pricesData={pricesData}
+                                liveRates={liveRates}
+                                charges={charges}
+                                currency={activeCurrency}
+                            />
+                        </Suspense>
+                    )}
+                </div>
  
-                {activeTab === 'market' && (
-                    <MarketPulseView
-                        data={marketPulseData}
-                        historicalData={historicalData}
-                        symbol={symbol}
-                        currency={activeCurrency}
-                    />
-                )}
- 
-                {activeTab === 'analytics' && (
-                    <PerformanceAnalyticsView
-                        presets={presets}
-                        historicalData={historicalData} 
-                        symbol={symbol}
-                        pricesData={pricesData}         
-                        liveRates={liveRates}           
-                        currency={activeCurrency}
-                    />
-                )}
-                {activeTab === 'portfolios' && (
-                    <PortfoliosView
-                        presets={presets}
-                        pricesData={pricesData}
-                        liveRates={liveRates}
-                        currency={activeCurrency}
-                        symbol={symbol}
-                    />
-                )}
+                <div className={activeTab === 'market' ? '' : 'hidden'}>
+                    {visited.market && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <MarketPulseView
+                                data={marketPulseData}
+                                historicalData={historicalData}
+                                symbol={symbol}
+                                currency={activeCurrency}
+                            />
+                        </Suspense>
+                    )}
+                </div>
 
-                {activeTab === 'tax' && (
-                    <TaxCalculatorView
-                        symbol="£"
-                        currency="GBP"
-                        pricesData={gbpMarketData}
-                    />
-                )}
-                {activeTab === 'IHT' && (
-                    <IHTCalculatorView
-                        symbol="£"
-                        currency="GBP"
-                        pricesData={gbpMarketData}
-                    />
-                )}
-                {activeTab === 'cashcal' && (
-                    <CashCalView
-                        symbol={symbol}
-                        currency={activeCurrency}
-                    />
-                )}
+                <div className={activeTab === 'analytics' ? '' : 'hidden'}>
+                    {visited.analytics && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <PerformanceAnalyticsView
+                                presets={presets}
+                                historicalData={historicalData}
+                                symbol={symbol}
+                                pricesData={pricesData}
+                                liveRates={liveRates}
+                                currency={activeCurrency}
+                            />
+                        </Suspense>
+                    )}
+                </div>
+
+                <div className={activeTab === 'portfolios' ? '' : 'hidden'}>
+                    {visited.portfolios && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <PortfoliosView
+                                presets={presets}
+                                pricesData={pricesData}
+                                liveRates={liveRates}
+                                currency={activeCurrency}
+                                symbol={symbol}
+                            />
+                        </Suspense>
+                    )}
+                </div>
+
+                <div className={activeTab === 'tax' ? '' : 'hidden'}>
+                    {visited.tax && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <TaxCalculatorView symbol="£" currency="GBP" pricesData={gbpMarketData} />
+                        </Suspense>
+                    )}
+                </div>
+
+                <div className={activeTab === 'IHT' ? '' : 'hidden'}>
+                    {visited.IHT && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <IHTCalculatorView symbol="£" currency="GBP" pricesData={gbpMarketData} />
+                        </Suspense>
+                    )}
+                </div>
+
+                <div className={activeTab === 'cashcal' ? '' : 'hidden'}>
+                    {visited.cashcal && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <CashCalView symbol={symbol} currency={activeCurrency} />
+                        </Suspense>
+                    )}
+                </div>
             </main>
         </div>
     );

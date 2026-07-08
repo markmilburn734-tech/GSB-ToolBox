@@ -111,6 +111,10 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
     const handleUpdateAsset = (id, field, value) => {
         setAssets(prev => prev.map(asset => {
             if (asset.id === id) {
+                // Guard nonsensical negatives: prices are never negative; units never
+                // negative except a Cash line (which may hold a negative balance).
+                if (field === 'price' && parseFloat(value) < 0) value = '0';
+                if (field === 'units' && !isCash(asset.isin) && parseFloat(value) < 0) value = '0';
                 const updated = { ...asset, [field]: value };
                 
                 // Set price flag if user manually updates the price so useEffect doesn't overwrite it

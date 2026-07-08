@@ -1326,6 +1326,17 @@ export const IHT = Object.freeze({
     TAPER_THRESHOLD: 2000000,  // RNRB tapers £1 for every £2 over this
 });
 
+// ─── UK Capital Gains Tax (2024/25) ──────────────────────────────────────────
+// Centralised so annual rate/band updates are a one-line change here.
+export const CGT = Object.freeze({
+    LR_TAX: 0.18,          // CGT rate within the basic-rate band
+    HR_TAX: 0.24,          // CGT rate above the basic-rate band
+    BASE_ALLOWANCE: 3000,  // annual exempt amount (per person)
+    BASIC_RATE_LMT: 50270, // top of the basic-rate band (a GROSS-income threshold)
+    PERS_ALLOW: 12570,     // personal allowance
+    MARKET_BUFFER: 0.005,  // 0.5% sell-price volatility buffer
+});
+
 /**
  * RNRB after the £2m taper (£1 lost per £2 the estate exceeds the threshold).
  * @param {number} estateValue   value of the estate for taper purposes

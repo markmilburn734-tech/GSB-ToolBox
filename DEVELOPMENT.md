@@ -63,7 +63,8 @@ Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last 
 - **Analytics**: Analytics (`analytics`) · Portfolios (`portfolios`) · Pulse (`market`)
 - **Calculators**: CGT (`tax`) · IHT (`IHT`) · Cash Planner (`cashcal`, tab label "Cash Planner")
 
-- The **Standard Rebalancer stays mounted** (rendered in a `hidden` div) so entries persist across tab switches (in-session only). Others mount conditionally.
+- **All views stay mounted once visited** (each in a `hidden` div when inactive), so every tab's inputs persist across tab switches — **in-memory only; a full refresh clears everything** (no localStorage, by request). Driven by a `visited` map in `App.jsx`.
+- **Code-split:** each view is `React.lazy(() => import(...))` inside its own per-view `<Suspense>`, so only the visited tab's chunk downloads (initial load = Rebalancer only). Per-view Suspense (not one global) prevents a first-visit load from unmounting already-mounted tabs.
 - Global **currency selector** (top-right `<select>` dropdown) drives investment tabs. **CGT & IHT are GBP-locked** (UK statutory) — App passes them `gbpMarketData` + `currency="GBP"`.
 
 ### Design system (theme in `tailwind.config.js`)
@@ -135,6 +136,8 @@ This has been rewritten several times to fix correctness. Current model:
 5. **Cost adjustments (advice fees).** `costs = {advisor, platform, trustee}` (% p.a.); `totalDrag` is applied as a compounding time-based drag in `computeNetIndex(inputs, axis, startMs, dragPct)`. These are legit ADDITIONAL costs (not in fund price), unlike fund TER.
 6. **Chart x-key is the unique timestamp `t`**, not the label. Long timeframes repeat "MMM YY" labels; using the label as the category **broke drag-to-cross-slice on 1Y/3Y/5Y**. XAxis `dataKey="t"` with a `tickFormatter`; all drag lookups match on `d.t`. The display label is still `name` (used by the tooltip). **Don't switch the x-axis back to `name`.**
 7. Y-axis shows **% return** (`(v-100)%`) via tickFormatter; the data is still the base-100 index. Drag shows a **live badge** + purple band.
+
+**Known data artifact (not a code bug):** the *Dimensional Core · Risk Averse (10/90)* series shows a ~3% single-step drop each **late November** (e.g. 2025-11-28, also 2024-11-27). Traced to the distributing Morningstar share class **`0P0000VA1M.F`** (Global Short Fixed Income) going ex-distribution without a full total-return adjustment — the sister `.L` class only moves ~1.6% on the same date. Fix is data-side (point the model at the accumulating class in the sheet) or a code-side distribution/outlier smoother; `stitchDiscontinuities` ignores it because it's below the ×N glitch threshold.
 
 Verification pattern: replicate the exact JS in Python against the live daily CSV. Reference numbers that have been validated: CSPX YTD ≈ +7.5% (≈ Yahoo), Dim Core 60/40 5Y ≈ +36%, SMEA 3Y ≈ +33% (post-stitch).
 
