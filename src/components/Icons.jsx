@@ -1,17 +1,17 @@
 import React from 'react';
 
 // Base Icon Wrapper
-export const Icon = ({ children, className, size = 20, style = {} }) => (
-    <svg 
-        xmlns="http://www.w3.org/2000/svg" 
-        width={size} 
-        height={size} 
-        viewBox="0 0 24 24" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="1.5" 
-        strokeLinecap="round" 
-        strokeLinejoin="round" 
+export const Icon = ({ children, className, size = 20, style = {}, strokeWidth = 1.5 }) => (
+    <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
         className={className}
         style={style}
     >
@@ -40,8 +40,8 @@ export const Briefcase = (p) => <Icon {...p}><rect x="2" y="7" width="20" height
 export const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></Icon>;
 
 // Brand Logo
-export const GSB = ({ size = 20, color = "currentColor", className = "" }) => (
-    <Icon size={size} className={className} style={{ stroke: color }}>
+export const GSB = ({ size = 20, color = "currentColor", className = "", strokeWidth = 1.5 }) => (
+    <Icon size={size} className={className} strokeWidth={strokeWidth} style={{ stroke: color }}>
         <circle cx="12" cy="12" r="9" />
         <path d="M 6.5 5 A 4 4 0 0 0 17.5 12" />
         <path d="M 6.5 12 A 4 4 0 0 1 17.5 19" />

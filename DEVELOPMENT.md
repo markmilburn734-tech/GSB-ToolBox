@@ -64,7 +64,13 @@ Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last 
 - **Calculators**: CGT (`tax`) · IHT (`IHT`) · Cash Planner (`cashcal`, tab label "Cash Planner")
 
 - The **Standard Rebalancer stays mounted** (rendered in a `hidden` div) so entries persist across tab switches (in-session only). Others mount conditionally.
-- Global **currency toggle** drives investment tabs. **CGT & IHT are GBP-locked** (UK statutory) — App passes them `gbpMarketData` + `currency="GBP"`.
+- Global **currency selector** (top-right `<select>` dropdown) drives investment tabs. **CGT & IHT are GBP-locked** (UK statutory) — App passes them `gbpMarketData` + `currency="GBP"`.
+
+### Design system (theme in `tailwind.config.js`)
+- **Brand:** `brand`/`brand2` `#573960` (purple), `brand3–5` `#ff3154` (accent), `brand6` `#816a88`, `brand-tint` `#f4f1f5` (light wash). `shadow-brand` = soft purple shadow.
+- **Font:** native Arial-esque stack (`Segoe UI` → `system-ui` → Helvetica/Arial) — no web-font load. Body uses `font-sans`.
+- **Squared corners:** the `borderRadius` scale is overridden small (2xl ≈ 6px, 3xl ≈ 8px) so all cards read crisp; `rounded-full` (pills/avatars) unaffected. Sharpen further by lowering these values.
+- **GSB watermark:** a fixed, low-opacity (`0.06`) purple `<GSB>` logo with a drop-shadow sits behind content (`App.jsx`, `z-0`); `main` is `z-10`. `Icon`/`GSB` now take a `strokeWidth` prop (watermark uses `0.7`). Header carries a brand-gradient accent line.
 
 ---
 

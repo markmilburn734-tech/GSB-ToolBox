@@ -23,7 +23,7 @@ import TaxCalculatorView        from './components/TaxCalculatorView';
 import IHTCalculatorView        from './components/IHTCalculatorView';
 import CashCalView              from './components/CashCalView';
 import { TabButton }            from './components/TabButton';
-import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase, DollarSign } from './components/Icons';
+import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase, DollarSign, ChevronRight } from './components/Icons';
  
 import { CURRENCY_SYMBOLS } from './constants';
  
@@ -151,9 +151,21 @@ export default function App() {
  
     // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-brand-tint/40">
+            {/* ── GSB brand watermark (fixed, behind everything) ─────────── */}
+            <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+                <div
+                    className="absolute -right-40 -bottom-32 opacity-[0.06]"
+                    style={{ filter: 'drop-shadow(0 12px 26px rgba(87,57,96,0.45))' }}
+                >
+                    <GSB size={660} color="#573960" strokeWidth={0.7} />
+                </div>
+            </div>
+
             {/* ── Navigation Header ──────────────────────────────────────── */}
-            <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+            <nav className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+                {/* Smooth brand accent line along the bottom edge */}
+                <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-brand via-brand6 to-brand3" />
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex items-center justify-between h-16">
  
@@ -200,20 +212,20 @@ export default function App() {
                                 </span>
                             )}
  
-                            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-                                {Object.keys(CURRENCY_SYMBOLS).map((curr) => (
-                                    <button
-                                        key={curr}
-                                        onClick={() => setActiveCurrency(curr)}
-                                        className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${
-                                            activeCurrency === curr
-                                                ? 'bg-white text-brand shadow-sm'
-                                                : 'text-gray-400'
-                                        }`}
-                                    >
-                                        {curr}
-                                    </button>
-                                ))}
+                            <div className="relative">
+                                <select
+                                    value={activeCurrency}
+                                    onChange={(e) => setActiveCurrency(e.target.value)}
+                                    aria-label="Display currency"
+                                    className="appearance-none cursor-pointer bg-brand-tint border border-brand6/30 text-brand font-bold text-xs rounded-md pl-3 pr-8 py-1.5 outline-none hover:border-brand6/60 focus:border-brand transition-colors"
+                                >
+                                    {Object.keys(CURRENCY_SYMBOLS).map((curr) => (
+                                        <option key={curr} value={curr}>
+                                            {CURRENCY_SYMBOLS[curr]} {curr}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronRight size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-brand6" />
                             </div>
                         </div>
                     </div>
@@ -256,7 +268,7 @@ export default function App() {
             )}
  
             {/* ── Main Viewport ──────────────────────────────────────────── */}
-            <main className="py-6">
+            <main className="relative z-10 py-6">
                 {/* Rebalancer stays mounted so entries persist across tab switches */}
                 <div className={activeTab === 'rebalancer' ? '' : 'hidden'}>
                     <RebalancerView
