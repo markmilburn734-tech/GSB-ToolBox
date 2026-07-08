@@ -95,15 +95,15 @@ export default function MarketPulseView({ data, historicalData = {}, symbol, cur
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search name, ticker or ISIN…"
-          className="flex-1 px-3 py-2 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl text-sm outline-none focus:border-brand"
+          className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:border-brand"
         />
-        <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="px-3 py-2 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none">
+        <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none">
           {classes.map(c => <option key={c} value={c}>{c === 'ALL' ? 'All classes' : c}</option>)}
         </select>
-        <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} className="px-3 py-2 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none">
+        <select value={filterRegion} onChange={(e) => setFilterRegion(e.target.value)} className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none">
           {regions.map(r => <option key={r} value={r}>{r === 'ALL' ? 'All regions' : r}</option>)}
         </select>
-        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-2 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none">
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 outline-none">
           <option value="name">Sort: Name</option>
           <option value="price">Sort: Price</option>
           <option value="offHigh">Sort: % off high</option>
@@ -124,7 +124,7 @@ export default function MarketPulseView({ data, historicalData = {}, symbol, cur
                   key={info.ticker}
                   onClick={() => setSelectedTicker(info.ticker)}
                   className={`w-full text-left p-3.5 rounded-xl border transition-all duration-200 ${
-                    isSelected ? 'border-brand3 bg-brand3/5 shadow-sm ring-1 ring-brand3' : 'border-gray-200 bg-white/75 backdrop-blur-smhover:border-gray-300 shadow-sm'
+                    isSelected ? 'border-brand3 bg-brand3/5 shadow-sm ring-1 ring-brand3' : 'border-gray-200 bg-white/75 backdrop-blur-sm hover:border-gray-300 shadow-sm'
                   }`}
                 >
                   <div className="flex justify-between items-center gap-2">
@@ -144,7 +144,7 @@ export default function MarketPulseView({ data, historicalData = {}, symbol, cur
         {/* RIGHT: detail */}
         <div className="lg:col-span-8">
           {activeAsset ? (
-            <div className="bg-white/75 backdrop-blur-smrounded-3xl border border-gray-200 p-8 shadow-sm sticky top-32">
+            <div className="bg-white/75 backdrop-blur-sm rounded-3xl border border-gray-200 p-8 shadow-sm sticky top-32">
               <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
                 <div>
                   <span className="inline-block px-3 py-1 rounded-full bg-brand3/10 text-brand3 text-[10px] font-black uppercase mb-3">Asset Overview</span>

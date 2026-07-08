@@ -315,7 +315,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                             setAssets(buildPresetAssets(items, selectedCurrency));
                             setPresetModalOpen(false);
                             if (setActiveCurrency) setActiveCurrency(selectedCurrency);
-                        }} className="w-full flex items-center justify-between px-4 py-3 bg-white/75 backdrop-blur-smborder border-gray-200 hover:border-brand3 hover:ring-1 hover:ring-brand3 rounded-xl text-left transition-all group">
+                        }} className="w-full flex items-center justify-between px-4 py-3 bg-white/75 backdrop-blur-sm border border-gray-200 hover:border-brand3 hover:ring-1 hover:ring-brand3 rounded-xl text-left transition-all group">
                             <div>
                                 <span className="block font-medium text-gray-800 group-hover:text-brand3">{profileName}</span>
                                 <span className="text-xs text-gray-400">{items.length} assets</span>
@@ -354,7 +354,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button onClick={() => { setSelectionPath({ category: null, currency: null }); setPresetModalOpen(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-white/75 backdrop-blur-smborder border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm">
+                    <button onClick={() => { setSelectionPath({ category: null, currency: null }); setPresetModalOpen(true); }} className="flex items-center gap-2 px-4 py-2.5 bg-white/75 backdrop-blur-sm border border-gray-200 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-50 transition-all shadow-sm">
                         <BookOpen size={16} /> Load Preset Strategy
                     </button>
                     <div className="relative">
@@ -364,7 +364,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                         {addMenuOpen && (
                             <>
                                 <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />
-                                <div className="absolute right-0 mt-2 w-72 bg-white/75 backdrop-blur-smrounded-xl border border-gray-200 shadow-xl p-2 z-20 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                <div className="absolute right-0 mt-2 w-72 bg-white/75 backdrop-blur-sm rounded-xl border border-gray-200 shadow-xl p-2 z-20 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
                                     <button onClick={() => { addBlankRow(); setAddMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm font-medium hover:bg-gray-50 rounded-lg flex items-center gap-2 text-gray-700">
                                         <Plus size={14} /> Blank Manual Entry
                                     </button>
@@ -386,7 +386,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             </div>
 
             {/* Asset Allocation Matrix */}
-            <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-brand shadow-sm overflow-hidden mb-6 print:bg-white/75 backdrop-blur-smprint:shadow-none print:border-gray-300">
+            <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-brand shadow-sm overflow-hidden mb-6 print:bg-white/75 backdrop-blur-sm print:shadow-none print:border-gray-300">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px] text-left border-collapse">
                         <thead>
@@ -503,7 +503,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
 
             {/* Rebalancing Strategy Engine */}
             {totalWeight > 0 && (
-                <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in slide-in-from-bottom-3 duration-200 print:bg-white/75 backdrop-blur-smprint:shadow-none print:border-gray-300">
+                <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in slide-in-from-bottom-3 duration-200 print:bg-white/75 backdrop-blur-sm print:shadow-none print:border-gray-300">
                     
                     {/* Header & Controls */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4 mb-4">
@@ -519,7 +519,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                                     <button 
                                         key={mode}
                                         onClick={() => setDirectiveFilter(mode)}
-                                        className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${directiveFilter === mode ? 'bg-white/75 backdrop-blur-smshadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
+                                        className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${directiveFilter === mode ? 'bg-white/75 backdrop-blur-sm shadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
                                     >
                                         {mode}
                                     </button>
@@ -530,20 +530,20 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                             <div className="flex items-center bg-gray-50 p-1 rounded-lg border border-gray-200">
                                 <button
                                     onClick={() => setRoundingMode('FRACTIONAL')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'FRACTIONAL' ? 'bg-white/75 backdrop-blur-smshadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'FRACTIONAL' ? 'bg-white/75 backdrop-blur-sm shadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Fractional
                                 </button>
                                 <button
                                     onClick={() => setRoundingMode('WHOLE')}
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'WHOLE' ? 'bg-white/75 backdrop-blur-smshadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'WHOLE' ? 'bg-white/75 backdrop-blur-sm shadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Whole Units
                                 </button>
                                 <button
                                     onClick={() => setRoundingMode('MARGIN')}
                                     title="Buys round down, sells round up (leaves a cash margin) — step scales with unit price"
-                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'MARGIN' ? 'bg-white/75 backdrop-blur-smshadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'MARGIN' ? 'bg-white/75 backdrop-blur-sm shadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Margin
                                 </button>
@@ -596,7 +596,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             {/* Strategic Prescription Selection Modal */}
             {presetModalOpen && (
                 <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200 print:hidden">
-                    <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
+                    <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                             <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 bg-brand rounded-lg flex items-center justify-center text-white">

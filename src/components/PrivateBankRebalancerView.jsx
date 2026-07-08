@@ -401,7 +401,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Units</label>
             <div className="flex bg-gray-50 border border-gray-200 rounded-xl p-0.5">
               {[['margin', 'Margin'], ['exact', 'Exact']].map(([k, l]) => (
-                <button key={k} onClick={() => setRounding(k)} title={k === 'margin' ? 'Round trades to a sensible whole-unit margin (buys down, sells up) — step scales with unit price' : 'Exact fractional units'} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold ${rounding === k ? 'bg-white/75 backdrop-blur-smtext-brand shadow-sm' : 'text-gray-500'}`}>{l}</button>
+                <button key={k} onClick={() => setRounding(k)} title={k === 'margin' ? 'Round trades to a sensible whole-unit margin (buys down, sells up) — step scales with unit price' : 'Exact fractional units'} className={`px-2.5 py-1.5 rounded-lg text-xs font-bold ${rounding === k ? 'bg-white/75 backdrop-blur-sm text-brand shadow-sm' : 'text-gray-500'}`}>{l}</button>
               ))}
             </div></div>
           <div className="relative">
@@ -409,7 +409,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
             {addOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => { setAddOpen(false); setSearch(''); }} />
-                <div className="absolute right-0 mt-2 w-80 bg-white/75 backdrop-blur-smrounded-xl border border-gray-200 shadow-xl p-2 z-20">
+                <div className="absolute right-0 mt-2 w-80 bg-white/75 backdrop-blur-sm rounded-xl border border-gray-200 shadow-xl p-2 z-20">
                   <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search models or assets…" className="w-full px-2.5 py-1.5 mb-1 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-brand" />
                   <button onClick={addBlank} className="w-full text-left px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 rounded-lg">+ Blank holding</button>
                   <div className="max-h-72 overflow-y-auto mt-1">
@@ -495,7 +495,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                     <td colSpan={3} className="py-2 px-3 text-[10px] text-gray-400 uppercase font-bold">Model wrapper</td>
                     <td className="py-2 px-3 text-right font-bold text-gray-900 font-mono">{fmtBase(ms.base)}</td>
                     <td className="py-2 px-3 text-right font-mono text-gray-700 font-bold">{ms.pct.toFixed(1)}%</td>
-                    <td className="py-2 px-3 text-center"><input type="number" step="0.01" value={it.target} onChange={(e) => updItem(it.id, 'target', e.target.value)} className="w-16 text-center bg-white/75 backdrop-blur-smborder border-brand3/40 rounded-md px-1 py-1 outline-none font-bold text-xs text-brand" /></td>
+                    <td className="py-2 px-3 text-center"><input type="number" step="0.01" value={it.target} onChange={(e) => updItem(it.id, 'target', e.target.value)} className="w-16 text-center bg-white border border-brand3/40 rounded-md px-1 py-1 outline-none font-bold text-xs text-brand" /></td>
                     <td className="py-2 px-2 text-right">{skewBadge(ms.pct - tgt)}</td>
                     <td></td>
                     <td className="py-2 px-2 text-right"><button onClick={() => delItem(it.id)} className="p-1 text-gray-300 hover:text-rose-500"><Trash2 size={14} /></button></td>
@@ -584,9 +584,9 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
               <div key={l.id} className="flex flex-wrap items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3">
                 <input value={l.name} onChange={(e) => updLoan(l.id, 'name', e.target.value)} className="flex-1 min-w-[120px] font-semibold text-gray-800 bg-transparent outline-none text-sm" />
                 <div className="relative w-32"><span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">{sym(l.ccy)}</span>
-                  <input type="number" value={l.amount} onChange={(e) => updLoan(l.id, 'amount', parseFloat(e.target.value) || 0)} className="w-full pl-7 pr-2 py-1.5 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg text-sm font-mono outline-none" /></div>
+                  <input type="number" value={l.amount} onChange={(e) => updLoan(l.id, 'amount', parseFloat(e.target.value) || 0)} className="w-full pl-7 pr-2 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-mono outline-none" /></div>
                 {ccySelect(l.ccy, (e) => updLoan(l.id, 'ccy', e.target.value))}
-                <div className="relative w-20"><input type="number" value={l.rate} onChange={(e) => updLoan(l.id, 'rate', parseFloat(e.target.value) || 0)} className="w-full pl-2 pr-5 py-1.5 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg text-sm font-mono outline-none" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span></div>
+                <div className="relative w-20"><input type="number" value={l.rate} onChange={(e) => updLoan(l.id, 'rate', parseFloat(e.target.value) || 0)} className="w-full pl-2 pr-5 py-1.5 bg-white border border-gray-200 rounded-lg text-sm font-mono outline-none" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span></div>
                 <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600"><input type="checkbox" checked={l.drawable} onChange={(e) => updLoan(l.id, 'drawable', e.target.checked)} /> Drawable</label>
                 <button onClick={() => delLoan(l.id)} className="p-1 text-gray-300 hover:text-rose-500"><Trash2 size={14} /></button>
               </div>

@@ -245,7 +245,7 @@ export default function PerformanceAnalyticsView({
                 onClick={() => setTimeframe(key)}
                 className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
                   timeframe === key
-                    ? 'bg-white/75 backdrop-blur-smtext-slate-900 shadow-sm'
+                    ? 'bg-white/75 backdrop-blur-sm text-slate-900 shadow-sm'
                     : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
@@ -265,7 +265,7 @@ export default function PerformanceAnalyticsView({
       </div>
 
       {/* ── Cost adjustments (advice fees not in fund prices) ─────────────── */}
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white/75 backdrop-blur-smpx-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-white/75 backdrop-blur-sm px-5 py-3 rounded-2xl border border-slate-100 shadow-sm">
         <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Advice costs (p.a.)</span>
         {[['advisor', 'Advisor'], ['platform', 'Platform'], ['trustee', 'Trustee (pensions)']].map(([k, label]) => (
           <label key={k} className="flex items-center gap-1.5 text-xs font-semibold text-slate-600">
@@ -291,7 +291,7 @@ export default function PerformanceAnalyticsView({
           return (
             <div
               key={sel.id}
-              className="p-3.5 rounded-2xl border border-slate-100 bg-white/75 backdrop-blur-smshadow-sm relative flex flex-col gap-2"
+              className="p-3.5 rounded-2xl border border-slate-100 bg-white/75 backdrop-blur-sm shadow-sm relative flex flex-col gap-2"
             >
               {/* Card header */}
               <div className="flex items-center justify-between">
@@ -424,7 +424,7 @@ export default function PerformanceAnalyticsView({
                               onChange={(e) =>
                                 updateCustomHolding(sel.id, holding.ticker, 'weight', e.target.value)
                               }
-                              className="w-full pr-5 pl-1.5 py-0.5 bg-white/75 backdrop-blur-smborder border-slate-200 rounded text-xs font-mono text-slate-800 outline-none focus:border-slate-400"
+                              className="w-full pr-5 pl-1.5 py-0.5 bg-white border border-slate-200 rounded text-xs font-mono text-slate-800 outline-none focus:border-slate-400"
                             />
                             <span className="absolute right-1 top-1/2 -translate-y-1/2 text-[9px] text-slate-400 font-bold pointer-events-none">
                               %
@@ -467,7 +467,7 @@ export default function PerformanceAnalyticsView({
       </div>
 
       {/* ── Chart Block ───────────────────────────────────────────────────── */}
-      <div className="bg-white/75 backdrop-blur-smp-5 rounded-2xl border border-slate-100 shadow-sm relative">
+      <div className="bg-white/75 backdrop-blur-sm p-5 rounded-2xl border border-slate-100 shadow-sm relative">
         {isChartPopulated ? (
           <div className="space-y-5">
 
@@ -488,7 +488,7 @@ export default function PerformanceAnalyticsView({
                 {customStats && (
                   <button
                     onClick={clearSelection}
-                    className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white/75 backdrop-blur-smborder shadow-sm px-2 py-0.5 rounded-md transition-colors"
+                    className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white/75 backdrop-blur-sm border shadow-sm px-2 py-0.5 rounded-md transition-colors"
                   >
                     ✕ Clear Delta
                   </button>
@@ -661,7 +661,7 @@ export default function PerformanceAnalyticsView({
                   return (
                     <div
                       key={metrics.id}
-                      className="rounded-xl border border-slate-100 bg-white/75 backdrop-blur-smoverflow-hidden transition-all shadow-sm"
+                      className="rounded-xl border border-slate-100 bg-white/75 backdrop-blur-sm overflow-hidden transition-all shadow-sm"
                     >
                       {/* Summary header */}
                       <div className="px-4 py-3 flex items-center justify-between gap-4 border-b border-slate-100">
@@ -738,7 +738,7 @@ export default function PerformanceAnalyticsView({
                             {metrics.holdings.map((fund, fIdx) => (
                               <div
                                 key={fIdx}
-                                className="grid grid-cols-[80px_1fr_52px_52px_64px] gap-x-2 items-center px-2 py-1.5 bg-white/75 backdrop-blur-smrounded-lg border border-slate-100 text-xs hover:bg-slate-50 transition-colors"
+                                className="grid grid-cols-[80px_1fr_52px_52px_64px] gap-x-2 items-center px-2 py-1.5 bg-white/75 backdrop-blur-sm rounded-lg border border-slate-100 text-xs hover:bg-slate-50 transition-colors"
                               >
                                 {/* Ticker */}
                                 <div className="flex items-center gap-1.5 min-w-0">

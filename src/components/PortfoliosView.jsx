@@ -131,7 +131,7 @@ export default function PortfoliosView({ presets = {}, pricesData = {}, liveRate
 
     // ── Labelled horizontal bar list (used for class & region splits) ───────────
     const BreakdownBars = ({ title, icon, data }) => (
-        <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5">
+        <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
             <div className="flex items-center gap-2 mb-4 text-gray-500">
                 {icon}
                 <h4 className="text-xs font-bold uppercase tracking-wider">{title}</h4>
@@ -178,21 +178,21 @@ export default function PortfoliosView({ presets = {}, pricesData = {}, liveRate
                         <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Strategy</label>
                             <select value={strategy} onChange={(e) => setStrategy(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:border-brand">
+                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:border-brand">
                                 {strategies.map((s) => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Currency</label>
                             <select value={curr} onChange={(e) => setCurr(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:border-brand">
+                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:border-brand">
                                 {currencyOptions.map((c) => <option key={c} value={c}>{c}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Risk Profile</label>
                             <select value={profile} onChange={(e) => setProfile(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:border-brand">
+                                className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 outline-none focus:border-brand">
                                 {profileOptions.map((p) => <option key={p} value={p}>{p}</option>)}
                             </select>
                         </div>
@@ -200,19 +200,19 @@ export default function PortfoliosView({ presets = {}, pricesData = {}, liveRate
 
                     {/* KPI cards */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                        <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5">
+                        <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1 mb-1"><Percent size={11} /> Blended Net Cost</p>
                             <p className="text-2xl font-bold text-gray-900 font-mono">{blendedTer.toFixed(3)}%</p>
                         </div>
-                        <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5">
+                        <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Volatility Profile</p>
                             <span className={`inline-block px-2 py-0.5 text-xs font-extrabold rounded-md border mt-1 ${getVolBadgeStyles(dominantVol)}`}>{dominantVol}</span>
                         </div>
-                        <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5">
+                        <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Holdings</p>
                             <p className="text-2xl font-bold text-gray-900 font-mono">{rows.length}</p>
                         </div>
-                        <div className="bg-white/75 backdrop-blur-smrounded-2xl border border-gray-200 shadow-sm p-5">
+                        <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
                             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight Integrity</p>
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-extrabold mt-1 ${weightOk ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                                 {totalWeight.toFixed(2)}% {weightOk ? <Check size={12} /> : <X size={12} />}

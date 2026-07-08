@@ -111,7 +111,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
 
     const Toggle = ({ on, onClick }) => (
         <button onClick={onClick} className={`w-11 h-6 rounded-full transition-all relative shrink-0 ${on ? 'bg-brand3' : 'bg-gray-200'}`}>
-            <div className={`absolute top-1 bg-white/75 backdrop-blur-smw-4 h-4 rounded-full transition-transform shadow-sm ${on ? 'left-6' : 'left-1'}`} />
+            <div className={`absolute top-1 bg-white/75 backdrop-blur-sm w-4 h-4 rounded-full transition-transform shadow-sm ${on ? 'left-6' : 'left-1'}`} />
         </button>
     );
 
@@ -127,7 +127,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
                     <p className="text-gray-500 ml-1">£2m RNRB taper · 7-yr gift taper · transferable bands · charity 36% · pension (2027) · life cover</p>
                 </div>
                 <div className="flex gap-3">
-                    <div className="bg-white/75 backdrop-blur-smp-5 rounded-xl shadow-sm border border-gray-200 flex flex-col min-w-[170px]">
+                    <div className="bg-white/75 backdrop-blur-sm p-5 rounded-xl shadow-sm border border-gray-200 flex flex-col min-w-[170px]">
                         <label className="text-xs font-bold uppercase text-gray-400 mb-1 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Estimated IHT</label>
                         <span className="text-3xl font-mono font-bold text-brand3 tracking-tight">{fmt(results.taxOwed)}</span>
                         {results.charityQualifies && <span className="text-[10px] text-emerald-600 font-bold mt-1">36% charity rate applied</span>}
@@ -142,7 +142,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
 
             {/* Assumptions & allowances */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <div className="bg-white/75 backdrop-blur-smp-6 rounded-2xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
+                <div className="bg-white/75 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-200 lg:col-span-2 space-y-4">
                     <h3 className="text-sm font-bold text-gray-800">Reliefs & assumptions</h3>
                     <div className="flex items-center justify-between">
                         <div><span className="text-sm font-semibold text-gray-700">Married / transferable bands</span><p className="text-[11px] text-gray-400">Include a deceased spouse's unused allowances (second death)</p></div>
@@ -170,7 +170,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
                     </div>
                 </div>
 
-                <div className="bg-white/75 backdrop-blur-smp-6 rounded-2xl shadow-sm border border-gray-200">
+                <div className="bg-white/75 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-200">
                     <h3 className="text-sm font-bold text-gray-800 mb-4">Allowances & tax</h3>
                     <div className="space-y-3">
                         {[['Nil-rate band', fmt(results.activeNRB)], ['Residence NRB', fmt(results.effectiveRNRB)], ['Tax on gifts', fmt(results.giftTax)], ['Tax on estate', fmt(results.estateTax)], [`Rate applied`, `${(results.estateRate * 100).toFixed(0)}%`]].map(([k, v]) => (
@@ -182,7 +182,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
             </div>
 
             {/* Summary bar + add */}
-            <div className="bg-white/75 backdrop-blur-smp-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
+            <div className="bg-white/75 backdrop-blur-sm p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-6 mb-6">
                 <div className="grid grid-cols-2 md:flex md:gap-8 w-full md:w-auto gap-4">
                     <div><span className="block text-xs font-bold uppercase text-gray-400 mb-1">Gross estate</span><span className="text-xl font-semibold text-gray-900">{fmt(results.totalGrossEstate)}</span></div>
                     <div><span className="block text-xs font-bold uppercase text-gray-400 mb-1">Reliefs / exempt</span><span className="text-xl font-semibold text-emerald-600">-{fmt(results.totalReliefsClaimed)}</span></div>
@@ -194,7 +194,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
                     {addMenuOpen && (
                         <>
                             <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />
-                            <div className="absolute right-0 mt-2 w-72 bg-white/75 backdrop-blur-smborder border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden">
+                            <div className="absolute right-0 mt-2 w-72 bg-white/75 backdrop-blur-sm border border-gray-200 rounded-xl shadow-xl z-20 overflow-hidden">
                                 <button onClick={addBlankRow} className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center gap-3 border-b border-gray-100"><div className="bg-gray-100 p-1.5 rounded-lg text-gray-500"><Plus className="w-4 h-4" /></div><p className="text-sm font-bold text-gray-800">Blank Estate Asset</p></button>
                                 <div className="max-h-64 overflow-y-auto">
                                     <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase bg-gray-50/50 sticky top-0">Workbook asset ({currency})</div>
@@ -226,11 +226,11 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
                                     <div className="flex items-center gap-2"><button onClick={() => removeRow(a.id)} className="text-gray-300 hover:text-brand3"><Trash2 className="w-3.5 h-3.5" /></button>
                                         <input value={a.isin} onChange={(e) => updateAsset(a.id, 'isin', e.target.value)} className="bg-transparent text-[10px] text-gray-400 uppercase tracking-widest outline-none w-full" placeholder="ISIN/REF" /></div>
                                 </div></td>
-                                <td className="px-4 py-4"><input type="number" step="0.01" value={a.units} onChange={(e) => updateAsset(a.id, 'units', e.target.value)} className="w-full bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono outline-none" /></td>
-                                <td className="px-4 py-4"><input type="number" step="0.01" value={a.currentPrice} onChange={(e) => updateAsset(a.id, 'currentPrice', e.target.value)} className="w-full bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono outline-none" /></td>
+                                <td className="px-4 py-4"><input type="number" step="0.01" value={a.units} onChange={(e) => updateAsset(a.id, 'units', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono outline-none" /></td>
+                                <td className="px-4 py-4"><input type="number" step="0.01" value={a.currentPrice} onChange={(e) => updateAsset(a.id, 'currentPrice', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg px-2 py-1.5 text-sm font-mono outline-none" /></td>
                                 <td className="px-4 py-4"><select value={a.ihtStatus} onChange={(e) => { const s = e.target.value; updateAsset(a.id, 'ihtStatus', s); if (s !== 'Business Relief') updateAsset(a.id, 'reliefRate', s === 'Subject to IHT' ? 0 : 100); }} className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 outline-none">
                                     <option value="Subject to IHT">Subject to IHT</option><option value="Business Relief">Business Relief</option><option value="Pension">Pension</option><option value="Exempt">Exempt (spouse/charity)</option></select></td>
-                                <td className="px-4 py-4"><div className="relative"><input type="number" min="0" max="100" disabled={a.ihtStatus !== 'Business Relief'} value={a.reliefRate} onChange={(e) => updateAsset(a.id, 'reliefRate', e.target.value)} className="w-full bg-white/75 backdrop-blur-smborder border-gray-200 rounded-lg pl-2 pr-6 py-1.5 text-sm font-mono outline-none disabled:bg-gray-100 disabled:text-gray-400" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">%</span></div></td>
+                                <td className="px-4 py-4"><div className="relative"><input type="number" min="0" max="100" disabled={a.ihtStatus !== 'Business Relief'} value={a.reliefRate} onChange={(e) => updateAsset(a.id, 'reliefRate', e.target.value)} className="w-full bg-white border border-gray-200 rounded-lg pl-2 pr-6 py-1.5 text-sm font-mono outline-none disabled:bg-gray-100 disabled:text-gray-400" /><span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">%</span></div></td>
                                 <td className="px-6 py-4 text-right"><span className={`block font-bold text-lg ${a.taxableValue > 0 ? 'text-brand3' : 'text-gray-400'}`}>{fmt(a.taxableValue)}</span><span className="text-[10px] text-gray-400">Gross {fmt(a.rawValue)}</span></td>
                             </tr>
                         ))}
