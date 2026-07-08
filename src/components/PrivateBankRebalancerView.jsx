@@ -50,6 +50,14 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
     return pricesData[key] || Object.values(pricesData).find((a) => a.isin === key) || null;
   };
 
+  // Reverse-lookup a ticker from the price pool by ISIN (for CSV/receipt output).
+  const tickerForIsin = (isin) => {
+    const key = (isin || '').trim().toUpperCase();
+    if (!key || key === 'CASH' || key === 'N/A') return '';
+    const hit = Object.entries(pricesData).find(([, a]) => (a.isin || '').toUpperCase() === key);
+    return hit ? hit[0] : '';
+  };
+
   // Re-default fee categories when the bank changes.
   useEffect(() => {
     setItems((prev) => prev.map((it) => it.kind === 'asset'
@@ -171,7 +179,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       const f = cash ? { fee: 0, rate: 0, appliedMin: false } : computeTransactionFee(Math.abs(tradedNat), n.ccy, n.feeClass, bank, liveRates, schedule);
       const feeBase = f.fee * rate(n.ccy);
       const skip = Math.abs(rawUnits) < 0.5 || Math.abs(units) < 1;
-      return { id: n.id, name: n.name, modelName: l.modelName, ccy: n.ccy, units, tradedNat, tradedBase, feeBase, rate: f.rate, appliedMin: f.appliedMin, cash, isBuy: units > 0, skip };
+      return { id: n.id, name: n.name, isin: n.isin || '', ticker: tickerForIsin(n.isin), modelName: l.modelName, ccy: n.ccy, units, tradedNat, tradedBase, feeBase, rate: f.rate, appliedMin: f.appliedMin, cash, isBuy: units > 0, skip };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leaves, totals.investable, base, liveRates, bank, schedule, rounding]);
@@ -230,11 +238,15 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
   };
 
   const exportCSV = () => {
-    const head = ['Holding', 'Model', 'Action', 'Units', 'Currency', 'TradeNative', `Before(${base})`, `Charge(${base})`, `After(${base})`];
+    const q = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+    // Fund Name, ISIN, Ticker, BUY/SELL, Units, then native trade + base Before/Charge/After.
+    const head = ['Fund Name', 'ISIN', 'Ticker', 'BUY/SELL', 'Units', 'Model', 'Currency',
+      'Trade (native)', `Price Before Charges (${base})`, `Charges (${base})`, `Amount After (${base})`];
     const lines = activeDirectives.map((d) => {
       const after = d.isBuy ? d.tradedBase + d.feeBase : d.tradedBase - d.feeBase;
-      return [`"${String(d.name).replace(/"/g, '""')}"`, `"${d.modelName || ''}"`, d.isBuy ? 'BUY' : 'SELL',
-        d.units, d.ccy, Math.abs(d.tradedNat).toFixed(2), d.tradedBase.toFixed(2), d.feeBase.toFixed(2), after.toFixed(2)].join(',');
+      return [q(d.name), d.isin || (d.cash ? 'Cash' : 'MANUAL'), d.ticker, d.isBuy ? 'BUY' : 'SELL',
+        d.units, q(d.modelName || ''), d.ccy, Math.abs(d.tradedNat).toFixed(2),
+        d.tradedBase.toFixed(2), d.feeBase.toFixed(2), after.toFixed(2)].join(',');
     });
     const link = document.createElement('a');
     link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent([head.join(','), ...lines].join('\n'));
@@ -358,13 +370,20 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                 }
                 // model wrapper
                 const ms = modelStat(it); const tgt = parseFloat(it.target) || 0;
+                const wsum = (it.children || []).reduce((s, ch) => s + (parseFloat(ch.weight) || 0), 0);
+                const wOk = Math.abs(wsum - 100) < 0.1;
                 const header = (
                   <tr key={it.id} className="bg-brand6/20 border-y border-brand6/40">
                     <td className="py-2 px-4">
-                      <button onClick={() => toggle(it.id)} className="flex items-center gap-1.5 font-bold text-brand2">
-                        <ChevronRight size={15} className={it.expanded ? 'rotate-90 transition-transform' : 'transition-transform'} />
-                        {it.name} <span className="text-[10px] font-semibold text-gray-400">({it.label} · {it.children.length})</span>
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => toggle(it.id)} className="flex items-center gap-1.5 font-bold text-brand2">
+                          <ChevronRight size={15} className={it.expanded ? 'rotate-90 transition-transform' : 'transition-transform'} />
+                          {it.name} <span className="text-[10px] font-semibold text-gray-400">({it.label} · {it.children.length})</span>
+                        </button>
+                        <span title="Sum of this model's constituent weights — should total 100%" className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold flex items-center gap-0.5 ${wOk ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {wsum.toFixed(1)}% {wOk ? <Check size={9} /> : <X size={9} />}
+                        </span>
+                      </div>
                     </td>
                     <td colSpan={3} className="py-2 px-3 text-[10px] text-gray-400 uppercase font-bold">Model wrapper</td>
                     <td className="py-2 px-3 text-right font-bold text-gray-900 font-mono">{fmtBase(ms.base)}</td>

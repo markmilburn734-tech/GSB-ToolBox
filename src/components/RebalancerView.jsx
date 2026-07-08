@@ -143,41 +143,101 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
         }).format(val || 0);
     };
 
-    // Export CSV logic
-    const exportCSV = () => {
-        const rows = [["Asset Name", "ISIN", "Action", "Delta Value", "Delta Units"]];
-        assets.forEach(asset => {
+    // Reverse-lookup a ticker from the price pool by ISIN (rows only store ISIN).
+    const tickerForIsin = (isin) => {
+        const key = (isin || '').toUpperCase();
+        if (!key || key === 'N/A' || isCash(key)) return '';
+        const hit = Object.entries(pricesData || {}).find(([, a]) => (a.isin || '').toUpperCase() === key);
+        return hit ? hit[0] : '';
+    };
+
+    // Single source of truth for the actionable trade list — used by the on-screen
+    // cards, the CSV export and the print receipt so they can never diverge.
+    const directives = useMemo(() => {
+        return assets.map(asset => {
             const targetPct = (parseFloat(asset.target) || 0) / 100;
             const idealAllocation = totalNewValue * targetPct;
             const currentAllocation = (parseFloat(asset.price) || 0) * (parseFloat(asset.units) || 0);
             const deltaValue = idealAllocation - currentAllocation;
-            
-            if (Math.abs(deltaValue) < 0.01) return;
+            const assetPrice = parseFloat(asset.price) || 0;
+            const deltaUnits = assetPrice > 0 ? deltaValue / assetPrice : 0;
             const isBuy = deltaValue > 0;
-            if (directiveFilter === 'BUY' && !isBuy) return;
-            if (directiveFilter === 'SELL' && isBuy) return;
+            const displayUnits = roundingMode === 'WHOLE' ? Math.round(deltaUnits) : parseFloat(deltaUnits.toFixed(4));
+            return { asset, deltaValue, deltaUnits, assetPrice, isBuy, displayUnits };
+        }).filter(d => {
+            if (Math.abs(d.deltaValue) < 0.01) return false;
+            if (directiveFilter === 'BUY' && !d.isBuy) return false;
+            if (directiveFilter === 'SELL' && d.isBuy) return false;
+            if (roundingMode === 'WHOLE' && d.displayUnits === 0) return false;
+            return true;
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [assets, totalNewValue, directiveFilter, roundingMode]);
 
-            const action = isBuy ? "BUY" : "SELL";
-            const deltaUnits = (parseFloat(asset.price) || 0) > 0 ? deltaValue / (parseFloat(asset.price) || 1) : 0;
-            const displayUnits = roundingMode === 'WHOLE' ? Math.round(deltaUnits) : deltaUnits.toFixed(4);
-
+    // Export CSV logic — Fund Name, ISIN, Ticker, BUY/SELL, Units, Amount
+    const exportCSV = () => {
+        const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
+        const rows = [["Fund Name", "ISIN", "Ticker", "BUY/SELL", "Units", `Amount (${currency})`]];
+        directives.forEach(d => {
             rows.push([
-                `"${asset.name}"`, 
-                asset.isin || "MANUAL", 
-                action, 
-                Math.abs(deltaValue).toFixed(2), 
-                displayUnits
+                esc(d.asset.name),
+                d.asset.isin || "MANUAL",
+                tickerForIsin(d.asset.isin),
+                d.isBuy ? "BUY" : "SELL",
+                d.displayUnits,
+                Math.abs(d.deltaValue).toFixed(2),
             ]);
         });
-
         const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
-        const encodedUri = encodeURI(csvContent);
         const link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
+        link.setAttribute("href", encodeURI(csvContent));
         link.setAttribute("download", `rebalance_directives_${new Date().toISOString().slice(0,10)}.csv`);
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    // Clean, trades-only print receipt (opens a print/PDF window) — mirrors the
+    // Private Bank receipt so advisers can record just the actions, not the page.
+    const escHtml = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const printReceipt = () => {
+        const when = new Date().toLocaleString('en-GB');
+        const buys  = directives.filter(d => d.isBuy).reduce((s, d) => s + Math.abs(d.deltaValue), 0);
+        const sells = directives.filter(d => !d.isBuy).reduce((s, d) => s + Math.abs(d.deltaValue), 0);
+        const body = directives.map(d => `<tr>
+            <td>${escHtml(d.asset.name)}</td>
+            <td class="mono">${escHtml(tickerForIsin(d.asset.isin) || d.asset.isin || 'MANUAL')}</td>
+            <td class="${d.isBuy ? 'buy' : 'sell'}">${d.isBuy ? 'BUY' : 'SELL'}</td>
+            <td class="r mono">${d.isBuy ? '+' : '−'}${Math.abs(d.displayUnits)}</td>
+            <td class="r b">${formatCurrency(Math.abs(d.deltaValue))}</td></tr>`).join('');
+        const html = `<!doctype html><html><head><meta charset="utf-8"><title>Rebalance Trades</title><style>
+            body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:32px;font-size:12px}
+            h1{font-size:18px;margin:0 0 2px} .meta{color:#666;font-size:11px;margin-bottom:16px}
+            .sum{display:flex;gap:26px;margin:12px 0 18px} .sum div{font-size:11px;color:#666} .sum b{display:block;color:#111;font-size:14px}
+            table{width:100%;border-collapse:collapse} th,td{padding:7px 8px;border-bottom:1px solid #e5e5e5;text-align:left;vertical-align:top}
+            th{font-size:9px;text-transform:uppercase;color:#888;letter-spacing:.05em}
+            td.r,th.r{text-align:right;font-variant-numeric:tabular-nums} td.b{font-weight:bold} .mono{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px}
+            .buy{color:#059669;font-weight:bold} .sell{color:#dc2626;font-weight:bold}
+            .note{color:#999;font-size:10px;margin-top:16px}
+            @media print{body{margin:12px}}</style></head><body>
+            <h1>Rebalance — Trade Instructions</h1>
+            <div class="meta">Base ${escHtml(currency)} &middot; ${when}</div>
+            <div class="sum">
+              <div>Portfolio value<b>${formatCurrency(totalCurrentValue)}</b></div>
+              <div>Post cash flow<b>${formatCurrency(totalNewValue)}</b></div>
+              <div>Total buys<b>${formatCurrency(buys)}</b></div>
+              <div>Total sells<b>${formatCurrency(sells)}</b></div>
+            </div>
+            <table><thead><tr><th>Fund Name</th><th>Ticker</th><th>Action</th><th class="r">Units</th><th class="r">Amount</th></tr></thead>
+            <tbody>${body || '<tr><td colspan="5">No trades required.</td></tr>'}</tbody></table>
+            <div class="note">Estimated instructions for guidance only — verify before dealing.</div>
+            </body></html>`;
+        const w = window.open('', '_blank');
+        if (!w) return;
+        w.document.write(html);
+        w.document.close();
+        w.focus();
+        setTimeout(() => w.print(), 300);
     };
 
     // Recalculate component pricing hooks when target currency or backend prices refresh (Respecting local overrides)
@@ -468,7 +528,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                                 <button onClick={exportCSV} className="p-2 text-gray-500 hover:text-brand hover:bg-brand6 rounded-lg transition-all" title="Export CSV">
                                     <Download size={18} />
                                 </button>
-                                <button onClick={() => window.print()} className="p-2 text-gray-500 hover:text-brand hover:bg-brand6 rounded-lg transition-all" title="Print Directives">
+                                <button onClick={printReceipt} className="p-2 text-gray-500 hover:text-brand hover:bg-brand6 rounded-lg transition-all" title="Print / PDF Trades">
                                     <Printer size={18} />
                                 </button>
                             </div>
@@ -476,32 +536,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {assets.map((asset) => {
-                            const targetPct = (parseFloat(asset.target) || 0) / 100;
-                            const idealAllocation = totalNewValue * targetPct;
-                            const currentAllocation = (parseFloat(asset.price) || 0) * (parseFloat(asset.units) || 0);
-                            const deltaValue = idealAllocation - currentAllocation;
-                            
-                            // Prevent div by zero, calculate delta units
-                            const assetPrice = parseFloat(asset.price) || 0;
-                            const deltaUnits = assetPrice > 0 ? deltaValue / assetPrice : 0;
-
-                            if (Math.abs(deltaValue) < 0.01) return null;
-
-                            const isBuy = deltaValue > 0;
-                            
-                            // Apply Directional Filter
-                            if (directiveFilter === 'BUY' && !isBuy) return null;
-                            if (directiveFilter === 'SELL' && isBuy) return null;
-
-                            // Apply Rounding mode
-                            const displayUnits = roundingMode === 'WHOLE' 
-                                ? Math.round(deltaUnits) 
-                                : deltaUnits.toFixed(4);
-
-                            // Skip rendering if rounding to whole zeroed out the action
-                            if (roundingMode === 'WHOLE' && displayUnits === 0) return null;
-
+                        {directives.map(({ asset, deltaValue, isBuy, displayUnits }) => {
                             return (
                                 <div key={asset.id} className={`p-4 rounded-xl border flex flex-col justify-between transition-all print:break-inside-avoid ${isBuy ? 'bg-emerald-50/30 border-emerald-100 print:border-gray-300' : 'bg-rose-50/20 border-rose-100 print:border-gray-300'}`}>
                                     <div>
