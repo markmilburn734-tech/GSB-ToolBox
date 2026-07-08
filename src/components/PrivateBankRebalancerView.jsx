@@ -26,6 +26,29 @@ const Printer = ({ size = 14 }) => (
     <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
   </svg>
 );
+const Lock = ({ size = 13, open = false }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    {open ? <path d="M7 11V7a5 5 0 0 1 9.9-1" /> : <path d="M7 11V7a5 5 0 0 1 10 0v4" />}
+  </svg>
+);
+
+// Equity/bond split for the mixed "Funds" class, tiered off the sheet's risk rating.
+// Confirmed against the fund names themselves (LifeStrategy 20% → Low, etc.).
+const VOL_TIER = { 'low': [0.2, 0.8], 'below average': [0.4, 0.6], 'average': [0.6, 0.4], 'above average': [0.8, 0.2], 'high': [1.0, 0.0] };
+// Returns [equityFraction, bondFraction]; the remainder (1-eq-bd) is treated as cash.
+const classifyEB = (cls, vol, bucket) => {
+  if (bucket === 'equity') return [1, 0];
+  if (bucket === 'bond')   return [0, 1];
+  if (bucket === 'cash')   return [0, 0];
+  const c = (cls || '').toLowerCase(), v = (vol || '').toLowerCase();
+  if (c.includes('money market')) return [0, 0];
+  if (c.includes('bond'))         return [0, 1];
+  if (c.includes('equit'))        return [1, 0];   // Equity Funds, Equities / ETFs
+  if (c === 'funds')              return VOL_TIER[v] || [0.6, 0.4];
+  return [1, 0];
+};
+const BUCKETS = [['auto', 'Auto'], ['equity', 'Eq'], ['bond', 'Bd'], ['cash', 'Csh']];
 
 export default function PrivateBankRebalancerView({ presets = {}, pricesData = {}, liveRates = {}, charges = null, currency = 'USD' }) {
   const schedule = charges || PB_CHARGES;
@@ -37,6 +60,11 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
   const [rounding, setRounding] = useState('margin');   // 'margin' (±5) | 'exact'
   const [addOpen, setAddOpen]   = useState(false);
   const [search, setSearch]     = useState('');
+
+  // Equity/bond ratio optimiser controls.
+  const [ratioOn, setRatioOn]   = useState(false);
+  const [eqTarget, setEqTarget] = useState(60);   // % equity; bond = 100 - eqTarget
+  const [drift, setDrift]       = useState(0);     // allowed +/- drift from model weight (% of portfolio)
 
   const [items, setItems] = useState([]);   // mix of {kind:'asset'} and {kind:'model', children:[…]}
   const [loans, setLoans] = useState([]);
@@ -88,9 +116,9 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
 
   // ── Add handlers ────────────────────────────────────────────────────────────
   const usedTarget = () => items.reduce((s, it) => s + (parseFloat(it.target) || 0), 0);
-  const addBlank = () => { setItems((p) => [...p, { id: uid(), kind: 'asset', name: 'New holding', isin: '', ccy: base, price: '', units: '', target: '', cls: 'Equity', feeClass: defFee('Equity') }]); setAddOpen(false); };
+  const addBlank = () => { setItems((p) => [...p, { id: uid(), kind: 'asset', name: 'New holding', isin: '', ccy: base, price: '', units: '', target: '', cls: 'Equity', feeClass: defFee('Equity'), vol: '', bucket: 'auto', locked: false }]); setAddOpen(false); };
   const addAsset = (a, ticker) => {
-    setItems((p) => [...p, { id: uid(), kind: 'asset', name: a.name, isin: a.isin, ccy: a.currency || base, price: a.price, units: '', target: '', cls: a.assetClass || 'Equity', feeClass: defFee(a.assetClass || 'Equity') }]);
+    setItems((p) => [...p, { id: uid(), kind: 'asset', name: a.name, isin: a.isin, ccy: a.currency || base, price: a.price, units: '', target: '', cls: a.assetClass || 'Equity', feeClass: defFee(a.assetClass || 'Equity'), vol: a.volatility || '', bucket: 'auto', locked: false }]);
     setAddOpen(false); setSearch('');
   };
   const addModel = (m) => {
@@ -98,7 +126,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       const cash = isCash(h.ticker) || isCash(h.isin);
       const meta = cash ? null : lookupMeta(h.ticker || h.isin);
       const cls = cash ? 'Cash' : (meta?.assetClass || 'Equity');
-      return { id: uid(), name: h.name, isin: h.isin || (cash ? 'Cash' : ''), ccy: m.currency, price: cash ? 1 : (meta?.price ?? ''), units: '', weight: h.target, cls, feeClass: defFee(cls) };
+      return { id: uid(), name: h.name, isin: h.isin || (cash ? 'Cash' : ''), ccy: m.currency, price: cash ? 1 : (meta?.price ?? ''), units: '', weight: h.target, cls, feeClass: defFee(cls), vol: cash ? '' : (meta?.volatility || ''), bucket: 'auto', locked: false };
     });
     setItems((p) => [...p, { id: uid(), kind: 'model', name: m.profile, label: m.label, target: Math.max(0, 100 - usedTarget()), expanded: true, children }]);
     setAddOpen(false); setSearch('');
@@ -121,9 +149,13 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
 
   const leaves = useMemo(() => {
     const out = [];
+    const enrich = (node, meta) => {
+      const [eqf, bdf] = classifyEB(node.cls, node.vol, node.bucket);
+      return { ...meta, node, eqf, bdf, locked: !!node.locked };
+    };
     items.forEach((it) => {
-      if (it.kind === 'asset') out.push({ node: it, ref: { id: it.id }, effTarget: parseFloat(it.target) || 0, modelName: null });
-      else (it.children || []).forEach((ch) => out.push({ node: ch, ref: { mid: it.id, id: ch.id }, effTarget: (parseFloat(it.target) || 0) * (parseFloat(ch.weight) || 0) / 100, modelName: it.name }));
+      if (it.kind === 'asset') out.push(enrich(it, { ref: { id: it.id }, effTarget: parseFloat(it.target) || 0, modelName: null }));
+      else (it.children || []).forEach((ch) => out.push(enrich(ch, { ref: { mid: it.id, id: ch.id }, effTarget: (parseFloat(it.target) || 0) * (parseFloat(ch.weight) || 0) / 100, modelName: it.name })));
     });
     return out;
   }, [items]);
@@ -145,6 +177,68 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
     const b = (it.children || []).reduce((s, ch) => s + baseVal(ch), 0);
     return { base: b, pct: pct(b) };
   };
+
+  // ── Equity / bond exposure + ratio optimiser ────────────────────────────────
+  const P = totals.investable;
+
+  // Current equity/bond split of the invested portfolio (fractional; mixed funds
+  // contribute per their risk-tiered split).
+  const exposure = useMemo(() => {
+    let eq = 0, bd = 0;
+    leaves.forEach((l) => { const b = baseVal(l.node); eq += b * l.eqf; bd += b * l.bdf; });
+    const inv = totals.assetBase;
+    return { eq, bd, eqPct: inv > 0 ? eq / inv * 100 : 0, bdPct: inv > 0 ? bd / inv * 100 : 0 };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leaves, base, liveRates, totals.assetBase]);
+
+  // Solve to the target equity/bond ratio with the fewest / cheapest trades:
+  //   • cash (non-locked) is deployed first;
+  //   • locked lines and mixed funds are held fixed (their exposure counts);
+  //   • pure equity/bond lines are traded, most under/over-weight first, allowed
+  //     to drift up to `drift`% of the portfolio past their model weight.
+  // Returns per-leaf target %, plus the projected resulting split — verified in Python.
+  const opt = useMemo(() => {
+    if (!ratioOn || P <= 0) return null;
+    const driftAbs = (parseFloat(drift) || 0) / 100 * P;
+    const eqP = Math.min(100, Math.max(0, parseFloat(eqTarget) || 0));
+    const targetEq = eqP / 100 * P, targetBd = (100 - eqP) / 100 * P;
+
+    const cur = {}; leaves.forEach((l) => { cur[l.ref.id] = baseVal(l.node); });
+    const newVal = {}; leaves.forEach((l) => { newVal[l.ref.id] = cur[l.ref.id]; });
+
+    let fixedEq = 0, fixedBd = 0;
+    leaves.forEach((l) => {
+      const held = l.locked || (l.eqf > 0 && l.eqf < 1) || (l.bdf > 0 && l.bdf < 1);
+      if (held) { fixedEq += cur[l.ref.id] * l.eqf; fixedBd += cur[l.ref.id] * l.bdf; }
+      else if (l.eqf === 0 && l.bdf === 0) newVal[l.ref.id] = 0;   // deploy free cash
+    });
+    const eqT = leaves.filter((l) => !l.locked && l.eqf === 1);
+    const bdT = leaves.filter((l) => !l.locked && l.bdf === 1);
+
+    const alloc = (cands, targetSleeve) => {
+      const curSleeve = cands.reduce((s, l) => s + cur[l.ref.id], 0);
+      const need = targetSleeve - curSleeve;
+      const mv = {}; cands.forEach((l) => { mv[l.ref.id] = (l.effTarget / 100) * P; });
+      if (need >= 0) {   // net buy → fill most-underweight first
+        const order = [...cands].sort((a, b) => (mv[b.ref.id] - cur[b.ref.id]) - (mv[a.ref.id] - cur[a.ref.id]));
+        let rem = need;
+        order.forEach((l) => { const cap = Math.max(0, mv[l.ref.id] + driftAbs - cur[l.ref.id]); const buy = Math.min(cap, rem); newVal[l.ref.id] = cur[l.ref.id] + buy; rem -= buy; });
+        if (rem > 1e-6 && order.length) newVal[order[0].ref.id] += rem;
+      } else {           // net sell → trim most-overweight first
+        const order = [...cands].sort((a, b) => (cur[b.ref.id] - mv[b.ref.id]) - (cur[a.ref.id] - mv[a.ref.id]));
+        let rem = -need;
+        order.forEach((l) => { const cap = Math.min(cur[l.ref.id], Math.max(0, cur[l.ref.id] - (mv[l.ref.id] - driftAbs))); const sell = Math.min(cap, rem); newVal[l.ref.id] = cur[l.ref.id] - sell; rem -= sell; });
+        if (rem > 1e-6 && order.length) newVal[order[0].ref.id] -= Math.min(rem, newVal[order[0].ref.id]);
+      }
+    };
+    alloc(eqT, targetEq - fixedEq);
+    alloc(bdT, targetBd - fixedBd);
+
+    const targets = {}; let projEq = 0, projBd = 0, invested = 0;
+    leaves.forEach((l) => { targets[l.ref.id] = P > 0 ? newVal[l.ref.id] / P * 100 : 0; projEq += newVal[l.ref.id] * l.eqf; projBd += newVal[l.ref.id] * l.bdf; invested += newVal[l.ref.id]; });
+    return { targets, projEqPct: P > 0 ? projEq / P * 100 : 0, projBdPct: P > 0 ? projBd / P * 100 : 0, cashLeftPct: P > 0 ? (P - invested) / P * 100 : 0 };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ratioOn, eqTarget, drift, leaves, P, base, liveRates]);
 
   // ── Directives (with margin rounding) ────────────────────────────────────────
   // Price-banded rounding step so high-priced funds round finely: over £100/unit
@@ -168,7 +262,9 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       // market FUNDS are securities the bank still charges on.
       const cash = isCash(n.isin) || String(n.name || '').trim().toLowerCase() === 'cash';
       const curBase  = baseVal(n);
-      const idealBase = totals.investable * (l.effTarget / 100);
+      // In ratio mode the optimiser supplies each line's target; otherwise use the model target.
+      const effTgt = (opt && opt.targets[l.ref.id] != null) ? opt.targets[l.ref.id] : l.effTarget;
+      const idealBase = totals.investable * (effTgt / 100);
       const deltaBase = idealBase - curBase;
       const price = parseFloat(n.price) || 0;
       const rawUnits = price > 0 ? (deltaBase * resolveRate(base, n.ccy, liveRates)) / price : 0;
@@ -178,11 +274,12 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       // Cash is not a security — no transaction charge.
       const f = cash ? { fee: 0, rate: 0, appliedMin: false } : computeTransactionFee(Math.abs(tradedNat), n.ccy, n.feeClass, bank, liveRates, schedule);
       const feeBase = f.fee * rate(n.ccy);
-      const skip = Math.abs(rawUnits) < 0.5 || Math.abs(units) < 1;
+      // Locked lines never trade.
+      const skip = l.locked || Math.abs(rawUnits) < 0.5 || Math.abs(units) < 1;
       return { id: n.id, name: n.name, isin: n.isin || '', ticker: tickerForIsin(n.isin), modelName: l.modelName, ccy: n.ccy, units, tradedNat, tradedBase, feeBase, rate: f.rate, appliedMin: f.appliedMin, cash, isBuy: units > 0, skip };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [leaves, totals.investable, base, liveRates, bank, schedule, rounding]);
+  }, [leaves, totals.investable, base, liveRates, bank, schedule, rounding, opt]);
 
   const totalFees = directives.reduce((s, d) => s + (d.skip ? 0 : d.feeBase), 0);
 
@@ -271,6 +368,18 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
     <select value={val} onChange={onChange} className="bg-gray-50 border border-gray-200 rounded-md px-1 py-1 text-[11px] font-semibold text-gray-700 outline-none max-w-[140px]">
       {bankClasses.map((c) => <option key={c} value={c}>{c}</option>)}
     </select>
+  );
+  // Lock toggle + (in ratio mode) equity/bond bucket override + delete.
+  const rowActions = (node, onBucket, onLock, onDel) => (
+    <div className="flex items-center justify-end gap-1">
+      {ratioOn && (
+        <select value={node.bucket || 'auto'} onChange={onBucket} title="Equity / Bond bucket used by the ratio solver (Auto = derived from class & risk)" className="bg-gray-50 border border-gray-200 rounded px-0.5 py-0.5 text-[10px] font-bold text-gray-600 outline-none">
+          {BUCKETS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+      )}
+      <button onClick={onLock} title={node.locked ? "Locked — won't be traded" : 'Lock from trading'} className={`p-1 rounded ${node.locked ? 'text-brand bg-brand6' : 'text-gray-300 hover:text-gray-500'}`}><Lock size={13} open={!node.locked} /></button>
+      <button onClick={onDel} className="p-1 text-gray-300 hover:text-rose-500"><Trash2 size={14} /></button>
+    </div>
   );
 
   return (
@@ -361,10 +470,10 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                       <td className="py-2 px-3 text-right"><input type="number" value={it.units} onChange={(e) => updItem(it.id, 'units', e.target.value)} className="w-24 text-right bg-transparent outline-none border-b border-transparent focus:border-brand font-mono" /></td>
                       <td className="py-2 px-3 text-right font-bold text-gray-900 font-mono">{fmtBase(b)}</td>
                       <td className="py-2 px-3 text-right font-mono text-gray-600">{cp.toFixed(1)}%</td>
-                      <td className="py-2 px-3 text-center"><input type="number" value={it.target} onChange={(e) => updItem(it.id, 'target', e.target.value)} className="w-14 text-center bg-gray-50 border border-gray-100 rounded-md px-1 py-1 outline-none font-bold text-xs" /></td>
+                      <td className="py-2 px-3 text-center"><input type="number" step="0.01" value={it.target} onChange={(e) => updItem(it.id, 'target', e.target.value)} className="w-16 text-center bg-gray-50 border border-gray-100 rounded-md px-1 py-1 outline-none font-bold text-xs" /></td>
                       <td className="py-2 px-2 text-right">{skewBadge(cp - tgt)}</td>
                       <td className="py-2 px-3">{feeSelect(it.feeClass, (e) => updItem(it.id, 'feeClass', e.target.value))}</td>
-                      <td className="py-2 px-2 text-right"><button onClick={() => delItem(it.id)} className="p-1 text-gray-300 hover:text-rose-500"><Trash2 size={14} /></button></td>
+                      <td className="py-2 px-2">{rowActions(it, (e) => updItem(it.id, 'bucket', e.target.value), () => updItem(it.id, 'locked', !it.locked), () => delItem(it.id))}</td>
                     </tr>
                   )];
                 }
@@ -388,7 +497,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                     <td colSpan={3} className="py-2 px-3 text-[10px] text-gray-400 uppercase font-bold">Model wrapper</td>
                     <td className="py-2 px-3 text-right font-bold text-gray-900 font-mono">{fmtBase(ms.base)}</td>
                     <td className="py-2 px-3 text-right font-mono text-gray-700 font-bold">{ms.pct.toFixed(1)}%</td>
-                    <td className="py-2 px-3 text-center"><input type="number" value={it.target} onChange={(e) => updItem(it.id, 'target', e.target.value)} className="w-14 text-center bg-white border border-brand3/40 rounded-md px-1 py-1 outline-none font-bold text-xs text-brand" /></td>
+                    <td className="py-2 px-3 text-center"><input type="number" step="0.01" value={it.target} onChange={(e) => updItem(it.id, 'target', e.target.value)} className="w-16 text-center bg-white border border-brand3/40 rounded-md px-1 py-1 outline-none font-bold text-xs text-brand" /></td>
                     <td className="py-2 px-2 text-right">{skewBadge(ms.pct - tgt)}</td>
                     <td></td>
                     <td className="py-2 px-2 text-right"><button onClick={() => delItem(it.id)} className="p-1 text-gray-300 hover:text-rose-500"><Trash2 size={14} /></button></td>
@@ -413,7 +522,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
                       </td>
                       <td className="py-1.5 px-2 text-right">{skewBadge(cp - eff)}</td>
                       <td className="py-1.5 px-3">{feeSelect(ch.feeClass, (e) => updChild(it.id, ch.id, 'feeClass', e.target.value))}</td>
-                      <td className="py-1.5 px-2 text-right"><button onClick={() => delChild(it.id, ch.id)} className="p-1 text-gray-300 hover:text-rose-500"><Trash2 size={13} /></button></td>
+                      <td className="py-1.5 px-2">{rowActions(ch, (e) => updChild(it.id, ch.id, 'bucket', e.target.value), () => updChild(it.id, ch.id, 'locked', !ch.locked), () => delChild(it.id, ch.id))}</td>
                     </tr>
                   );
                 }) : [];
@@ -430,6 +539,39 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
             Target {totalTarget.toFixed(1)}% {Math.abs(totalTarget - 100) < 0.01 ? <Check size={11} /> : <X size={11} />}
           </span>
         </div>
+      </div>
+
+      {/* Equity / Bond ratio optimiser */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 mb-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <label className="flex items-center gap-2 text-sm font-bold text-gray-800 cursor-pointer">
+            <input type="checkbox" checked={ratioOn} onChange={(e) => setRatioOn(e.target.checked)} className="w-4 h-4 accent-brand" />
+            Equity / Bond ratio rebalance
+            <span className="text-[10px] font-semibold text-gray-400">least-charge · cash first · respects locks</span>
+          </label>
+          <div className="flex flex-wrap items-end gap-3">
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Equity %</label>
+              <input type="number" step="0.01" value={eqTarget} onChange={(e) => setEqTarget(e.target.value)} disabled={!ratioOn} className="w-20 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold outline-none focus:border-brand disabled:opacity-40" /></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Bond %</label>
+              <div className="w-20 px-2 py-1.5 bg-gray-100 border border-gray-200 rounded-lg text-sm font-bold text-gray-600">{(100 - (parseFloat(eqTarget) || 0)).toFixed(2)}</div></div>
+            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1" title="How far a holding may drift from its model weight to save trades">Drift %</label>
+              <input type="number" step="0.5" value={drift} onChange={(e) => setDrift(e.target.value)} disabled={!ratioOn} className="w-20 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold outline-none focus:border-brand disabled:opacity-40" /></div>
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs border-t border-gray-100 pt-3">
+          <span className="text-gray-500">Current split: <b className="text-gray-800">{exposure.eqPct.toFixed(1)}% eq / {exposure.bdPct.toFixed(1)}% bd</b></span>
+          {ratioOn && opt && (
+            <>
+              <ChevronRight size={12} className="text-gray-300" />
+              <span className="text-gray-500">Target: <b className="text-brand">{(parseFloat(eqTarget) || 0).toFixed(1)}% / {(100 - (parseFloat(eqTarget) || 0)).toFixed(1)}%</b></span>
+              <span className="text-gray-500">Projected: <b className="text-emerald-600">{opt.projEqPct.toFixed(1)}% eq / {opt.projBdPct.toFixed(1)}% bd</b></span>
+              {opt.cashLeftPct > 0.05 && <span className="text-amber-600 font-semibold">Uninvested cash: {opt.cashLeftPct.toFixed(1)}%</span>}
+              <span className="text-gray-500">Est. charges: <b className="text-brand3">{fmtBase(totalFees)}</b></span>
+            </>
+          )}
+          {ratioOn && !opt && <span className="text-gray-400 italic">Add holdings to solve.</span>}
+        </div>
+        {ratioOn && <p className="mt-2 text-[10px] text-gray-400">Mixed “Funds” are split by risk rating (Low 20/80 → High 100/0); use the Eq/Bd/Csh selector on a row to override. Locked lines are held fixed; free cash is deployed first. Resulting trades show in the directives panel below.</p>}
       </div>
 
       {/* Loans */}
@@ -457,10 +599,11 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       </div>
 
       {/* Directives */}
-      {totalTarget > 0 && (
+      {(totalTarget > 0 || ratioOn) && (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3 mb-4">
             <div className="flex items-center gap-2"><TrendingUp size={18} className="text-brand" /><h3 className="font-bold text-gray-900">Rebalance directives & charges</h3>
+              {ratioOn && opt && <span className="px-2 py-0.5 rounded bg-brand6 text-brand text-[10px] font-extrabold">{(parseFloat(eqTarget) || 0).toFixed(0)}/{(100 - (parseFloat(eqTarget) || 0)).toFixed(0)} ratio</span>}
               <span className="text-[10px] text-gray-400 font-semibold">{rounding === 'margin' ? 'buys round down · sells round up' : 'exact units'}</span></div>
             <div className="flex items-center gap-2">
               <button onClick={printReceipt} disabled={activeDirectives.length === 0} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-200 disabled:opacity-40"><Printer size={14} /> Print trades</button>

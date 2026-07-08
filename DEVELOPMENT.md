@@ -61,7 +61,7 @@ One published workbook, base URL in `src/constants.js` → `GOOGLE_SHEETS_CSV_UR
 Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last sub-tab:
 - **Rebalancer**: Standard (`rebalancer`) · Private Bank (`pbrebalancer`)
 - **Analytics**: Analytics (`analytics`) · Portfolios (`portfolios`) · Pulse (`market`)
-- **Calculators**: CGT (`tax`) · IHT (`IHT`) · CashCal (`cashcal`)
+- **Calculators**: CGT (`tax`) · IHT (`IHT`) · Cash Planner (`cashcal`, tab label "Cash Planner")
 
 - The **Standard Rebalancer stays mounted** (rendered in a `hidden` div) so entries persist across tab switches (in-session only). Others mount conditionally.
 - Global **currency toggle** drives investment tabs. **CGT & IHT are GBP-locked** (UK statutory) — App passes them `gbpMarketData` + `currency="GBP"`.
@@ -71,7 +71,11 @@ Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last 
 ## 5. Features (file → what it does → key logic)
 
 ### RebalancerView.jsx (Standard)
-Multi-asset rebalancer in one display currency. Prices via `getLivePrice` (ISIN match, live FX). **Cash valued at par 1** (`isCash`). Loading a preset **merges** (keeps entered units by ISIN, zeros dropped holdings). Shows Current % + drift vs target. CSV export + print.
+Multi-asset rebalancer in one display currency. Prices via `getLivePrice` (ISIN match, live FX). **Cash valued at par 1** (`isCash`). Loading a preset **merges** (keeps entered units by ISIN, zeros dropped holdings). Shows Current % + drift vs target.
+- One shared `directives` memo feeds the on-screen cards, CSV and print so they can't diverge.
+- **CSV columns:** `Fund Name, ISIN, Ticker, BUY/SELL, Units, Amount (<ccy>)` — ticker is reverse-looked-up from `pricesData` by ISIN.
+- **Print** opens a clean trades-only receipt window (not `window.print()` on the page).
+- **Rounding modes:** Fractional · Whole · **Margin** (ported from PB: buys round down, sells up, price-banded step >100→1 / 50–100→2 / <50→5).
 
 ### PrivateBankRebalancerView.jsx (Private Bank)
 The most feature-rich. Built on `computeTransactionFee`.
@@ -82,7 +86,11 @@ The most feature-rich. Built on `computeTransactionFee`.
 - **Loans** (Lombard): liability and/or drawable (adds investable capital).
 - **Rounding:** `Margin` mode — buys round DOWN, sells UP; step by price band (>£100→1, £50–100→2, <£50→5). `Exact` mode = fractional.
 - Directives show **Before / Charge / After** in base currency + total cost.
-- **Print trades** (opens a clean receipt window → print/PDF) + **CSV export**.
+- **Print trades** (opens a clean receipt window → print/PDF) + **CSV export**. CSV columns: `Fund Name, ISIN, Ticker, BUY/SELL, Units, Model, Currency, Trade (native), Price Before Charges (base), Charges (base), Amount After (base)` — native trade + base Before/Charge/After.
+- **Model 100% badge:** each model header shows its constituent-weight sum (green ✓ at 100%, amber ✗ otherwise). Target inputs accept 2 dp (`step=0.01`).
+- **Equity/Bond ratio optimiser** (toggle in its own card): set overall equity% (bond = 100−eq) + a drift%. Rebalances to that split with fewest/cheapest trades — deploys free cash first, trades pure equity/bond lines most-under/over-weight first (up to model weight ± drift), holds **locked** lines and **mixed funds** fixed. Per-row **lock** toggle (skips the line from all trading) and **Eq/Bd/Csh/Auto** bucket override (shown when ratio mode on).
+  - Classification: `classifyEB(cls, vol, bucket)` → `[eqFrac, bdFrac]`. Bond Funds→(0,1); Equity Funds & Equities/ETFs→(1,0); Money Market & synthetic Cash→(0,0); generic **"Funds"** tiered by risk (`VOL_TIER`): Low 20/80 · Below Avg 40/60 · Avg 60/40 · Above Avg 80/20 · High 100/0 (confirmed against the fund names). Override via the bucket selector (e.g. *Vanguard Total World Stock* is Avg-vol but 100% equity).
+  - The `opt` memo returns per-leaf target % (fed into the existing directive engine as an effTarget override) + projected split + uninvested-cash %. **Trade math verified in Python** against live data: hits target, conserves cash, cash-first, respects locks. (Re-verify by replicating `opt`/`classifyEB` against the live Stocks CSV — the standing no-Node workflow.)
 
 ### PerformanceAnalyticsView.jsx + PerformanceLogic.js
 See §6 — the analytics engine, the most-iterated part.

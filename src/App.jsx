@@ -107,7 +107,7 @@ export default function App() {
         calculators: [
             { id: 'tax',     label: 'CGT',     icon: <PoundSign size={14} /> },
             { id: 'IHT',     label: 'IHT',     icon: <PoundSign size={14} /> },
-            { id: 'cashcal', label: 'CashCal', icon: <DollarSign size={14} /> },
+            { id: 'cashcal', label: 'Cash Planner', icon: <DollarSign size={14} /> },
         ],
     };
  

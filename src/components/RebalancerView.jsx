@@ -151,6 +151,21 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
         return hit ? hit[0] : '';
     };
 
+    // Margin rounding (ported from the Private Bank rebalancer): buys round DOWN,
+    // sells round UP, with a price-banded step (>100 → 1 unit, 50–100 → 2, <50 → 5)
+    // so a cash margin is left rather than an overspend.
+    const marginIncrement = (price) => {
+        const p = parseFloat(price) || 0;
+        if (p > 100) return 1;
+        if (p >= 50) return 2;
+        return 5;
+    };
+    const marginRound = (raw, price) => {
+        if (!isFinite(raw)) return 0;
+        const inc = marginIncrement(price);
+        return raw >= 0 ? Math.floor(raw / inc) * inc : -Math.ceil(Math.abs(raw) / inc) * inc;
+    };
+
     // Single source of truth for the actionable trade list — used by the on-screen
     // cards, the CSV export and the print receipt so they can never diverge.
     const directives = useMemo(() => {
@@ -162,13 +177,15 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             const assetPrice = parseFloat(asset.price) || 0;
             const deltaUnits = assetPrice > 0 ? deltaValue / assetPrice : 0;
             const isBuy = deltaValue > 0;
-            const displayUnits = roundingMode === 'WHOLE' ? Math.round(deltaUnits) : parseFloat(deltaUnits.toFixed(4));
+            const displayUnits = roundingMode === 'WHOLE'  ? Math.round(deltaUnits)
+                               : roundingMode === 'MARGIN' ? marginRound(deltaUnits, assetPrice)
+                               : parseFloat(deltaUnits.toFixed(4));
             return { asset, deltaValue, deltaUnits, assetPrice, isBuy, displayUnits };
         }).filter(d => {
             if (Math.abs(d.deltaValue) < 0.01) return false;
             if (directiveFilter === 'BUY' && !d.isBuy) return false;
             if (directiveFilter === 'SELL' && d.isBuy) return false;
-            if (roundingMode === 'WHOLE' && d.displayUnits === 0) return false;
+            if ((roundingMode === 'WHOLE' || roundingMode === 'MARGIN') && d.displayUnits === 0) return false;
             return true;
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -509,17 +526,24 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
 
                             {/* Rounding Toggle */}
                             <div className="flex items-center bg-gray-50 p-1 rounded-lg border border-gray-200">
-                                <button 
+                                <button
                                     onClick={() => setRoundingMode('FRACTIONAL')}
                                     className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'FRACTIONAL' ? 'bg-white shadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Fractional
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => setRoundingMode('WHOLE')}
                                     className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'WHOLE' ? 'bg-white shadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Whole Units
+                                </button>
+                                <button
+                                    onClick={() => setRoundingMode('MARGIN')}
+                                    title="Buys round down, sells round up (leaves a cash margin) — step scales with unit price"
+                                    className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${roundingMode === 'MARGIN' ? 'bg-white shadow-sm text-brand border border-gray-200/60' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    Margin
                                 </button>
                             </div>
 
