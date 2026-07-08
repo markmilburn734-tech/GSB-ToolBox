@@ -333,9 +333,6 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             {/* Top Toolbar */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm print:hidden">
                 <div className="flex items-center gap-4 flex-1">
-                    <div className="w-12 h-12 bg-brand6 rounded-xl flex items-center justify-center text-brand">
-                        <DollarSign size={24} />
-                    </div>
                     <div className="flex-1 max-w-xs">
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Cash Flow Injection</label>
                         <div className="relative">

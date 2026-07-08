@@ -152,13 +152,13 @@ export default function App() {
     // ── Render ───────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-brand-tint/40">
-            {/* ── GSB brand watermark (fixed, behind everything) ─────────── */}
-            <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+            {/* ── GSB brand watermark (fixed, centred behind everything) ─── */}
+            <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden flex items-center justify-center">
                 <div
-                    className="absolute -right-40 -bottom-32 opacity-[0.06]"
-                    style={{ filter: 'drop-shadow(0 12px 26px rgba(87,57,96,0.45))' }}
+                    className="opacity-[0.08]"
+                    style={{ filter: 'drop-shadow(0 16px 34px rgba(45,28,52,0.55))' }}
                 >
-                    <GSB size={660} color="#573960" strokeWidth={0.7} />
+                    <GSB size={720} color="#2e1c34" strokeWidth={0.7} />
                 </div>
             </div>
 
@@ -172,7 +172,7 @@ export default function App() {
                         {/* Left: Logo + Tabs */}
                         <div className="flex items-center gap-8">
                             <div className="font-bold text-xl text-gray-900 flex items-center gap-2">
-                                <div className="w-8 h-8 bg-brand rounded-lg flex items-center justify-center text-white">
+                                <div className="w-9 h-9 bg-gradient-to-br from-brand to-[#2e1c34] rounded-lg flex items-center justify-center text-white shadow-brand">
                                     <GSB size={20} color="white" />
                                 </div>
                                 GSB Toolbox
@@ -242,7 +242,7 @@ export default function App() {
                                 onClick={() => goTo(st.id)}
                                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === st.id
-                                        ? 'bg-brand6 text-brand'
+                                        ? 'bg-brand3/10 text-brand3 ring-1 ring-brand3/20'
                                         : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                                 }`}
                             >
