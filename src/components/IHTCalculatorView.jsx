@@ -212,7 +212,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
             </div>
 
             {/* Estate assets */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+            <div className="bg-white rounded-2xl shadow-sm border border-brand overflow-hidden mb-6">
                 <div className="px-6 py-3 border-b border-gray-100"><h3 className="text-sm font-bold text-gray-800">Estate assets</h3></div>
                 <div className="overflow-x-auto"><table className="w-full text-left border-collapse min-w-[900px]">
                     <thead><tr className="bg-gray-50 border-b border-gray-200 text-gray-500 text-[10px] font-bold uppercase tracking-wider"><th className="px-6 py-4">Asset</th><th className="px-4 py-4 w-24">Units</th><th className="px-4 py-4 w-36">Value ({symbol})</th><th className="px-4 py-4 w-52">IHT status</th><th className="px-4 py-4 w-24">Relief %</th><th className="px-6 py-4 text-right">Taxable</th></tr></thead>

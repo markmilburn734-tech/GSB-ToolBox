@@ -165,6 +165,8 @@ export default function App() {
 
             {/* ── Navigation Header (dark purple banner) ─────────────────── */}
             <nav className="sticky top-0 z-40 bg-[#2e1c34]">
+                {/* Brand accent line along the bottom edge of the dark banner */}
+                <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-brand via-brand6 to-brand3" />
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex items-center justify-between h-16">
 
@@ -213,9 +215,9 @@ export default function App() {
                                 <button
                                     onClick={() => setCurOpen((o) => !o)}
                                     aria-label="Display currency"
-                                    className="flex items-center gap-2 cursor-pointer bg-white/10 border border-white/20 text-white font-bold text-xs rounded-md pl-3 pr-2 py-1.5 outline-none hover:border-white/40 transition-colors"
+                                    className="flex items-center gap-2 cursor-pointer bg-transparent border border-brand3 text-white font-bold text-xs rounded-md pl-3 pr-2 py-1.5 outline-none hover:bg-white/5 transition-colors"
                                 >
-                                    <span className="text-brand3">{CURRENCY_SYMBOLS[activeCurrency]}</span> {activeCurrency}
+                                    <span>{CURRENCY_SYMBOLS[activeCurrency]}</span> {activeCurrency}
                                     <ChevronRight size={14} className={`text-white/70 transition-transform ${curOpen ? '-rotate-90' : 'rotate-90'}`} />
                                 </button>
                                 {curOpen && (
@@ -246,9 +248,7 @@ export default function App() {
 
             {/* ── Sub-tab bar (Analytics / Calculators groups) ───────────── */}
             {(activeGroup === 'rebalancer' || activeGroup === 'analytics' || activeGroup === 'calculators') && (
-                <div className="bg-[#2e1c34] sticky top-16 z-30 shadow-md">
-                    {/* Brand accent line closes the dark header block */}
-                    <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-brand via-brand6 to-brand3" />
+                <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 flex items-center gap-1 h-12">
                         {SUBTABS[activeGroup].map((st) => (
                             <button
@@ -256,8 +256,8 @@ export default function App() {
                                 onClick={() => goTo(st.id)}
                                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === st.id
-                                        ? 'bg-brand text-brand3 shadow-sm ring-1 ring-white/10'
-                                        : 'text-white/55 hover:text-white hover:bg-white/5'
+                                        ? 'bg-[#2e1c34] text-brand3 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                                 }`}
                             >
                                 {st.label}

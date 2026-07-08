@@ -249,7 +249,7 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
             </div>
 
             {/* Main Table Workspace */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-brand overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse min-w-[900px]">
                         <thead>

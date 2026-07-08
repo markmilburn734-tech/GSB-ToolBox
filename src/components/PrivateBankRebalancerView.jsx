@@ -436,7 +436,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       </div>
 
       {/* Holdings & models table */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-5">
+      <div className="bg-white rounded-2xl border border-brand shadow-sm overflow-hidden mb-5">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1080px] text-left text-sm">
             <thead>

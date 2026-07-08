@@ -386,7 +386,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             </div>
 
             {/* Asset Allocation Matrix */}
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden mb-6 print:shadow-none print:border-gray-300">
+            <div className="bg-white rounded-2xl border border-brand shadow-sm overflow-hidden mb-6 print:shadow-none print:border-gray-300">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px] text-left border-collapse">
                         <thead>
