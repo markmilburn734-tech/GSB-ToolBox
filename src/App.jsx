@@ -172,9 +172,7 @@ export default function App() {
                         {/* Left: Logo + Tabs */}
                         <div className="flex items-center gap-8">
                             <div className="font-bold text-xl text-white flex items-center gap-2">
-                                <div className="w-9 h-9 bg-white/10 ring-1 ring-white/15 rounded-lg flex items-center justify-center text-white">
-                                    <GSB size={20} color="white" />
-                                </div>
+                                <GSB size={28} color="#ff3154" />
                                 GSB Toolbox
                             </div>
  
@@ -246,7 +244,7 @@ export default function App() {
                                         : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                                 }`}
                             >
-                                {st.icon} {st.label}
+                                {st.label}
                             </button>
                         ))}
                     </div>

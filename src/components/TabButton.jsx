@@ -7,6 +7,6 @@ export const TabButton = ({ active, onClick, icon, label }) => (
             active ? 'border-brand3 text-white' : 'border-transparent text-white/55 hover:text-white'
         }`}
     >
-        {icon} {label}
+        {label}
     </button>
 );
