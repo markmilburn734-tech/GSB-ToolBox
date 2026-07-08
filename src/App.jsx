@@ -165,8 +165,6 @@ export default function App() {
 
             {/* ── Navigation Header (dark purple banner) ─────────────────── */}
             <nav className="sticky top-0 z-40 bg-[#2e1c34]">
-                {/* Brand accent line along the bottom edge of the dark banner */}
-                <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-brand via-brand6 to-brand3" />
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex items-center justify-between h-16">
 
@@ -249,15 +247,15 @@ export default function App() {
             {/* ── Sub-tab bar (Analytics / Calculators groups) ───────────── */}
             {(activeGroup === 'rebalancer' || activeGroup === 'analytics' || activeGroup === 'calculators') && (
                 <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
-                    <div className="max-w-7xl mx-auto px-4 flex items-center gap-1 h-12">
+                    <div className="max-w-7xl mx-auto px-4 flex items-stretch gap-1 h-12">
                         {SUBTABS[activeGroup].map((st) => (
                             <button
                                 key={st.id}
                                 onClick={() => goTo(st.id)}
-                                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                className={`flex items-center text-xs font-bold transition-all ${
                                     activeTab === st.id
-                                        ? 'bg-[#2e1c34] text-brand3 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                                        ? 'bg-[#2e1c34] text-brand3 rounded-b-lg px-4 shadow-md'
+                                        : 'my-1.5 rounded-lg px-3.5 text-gray-500 hover:text-gray-800 hover:bg-gray-50'
                                 }`}
                             >
                                 {st.label}

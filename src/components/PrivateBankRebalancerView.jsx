@@ -386,7 +386,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
     <div className="max-w-7xl mx-auto px-4 py-6">
       {/* Page heading */}
       <div className="mb-5">
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Private Bank Rebalancer</h2>
+        <h2 className="font-serif text-2xl font-bold text-gray-900 tracking-tight">Private Bank Rebalancer</h2>
         <p className="text-sm text-gray-500">Multi-currency · live FX · {bank} charges</p>
       </div>
       {/* Toolbar */}

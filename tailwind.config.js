@@ -17,10 +17,10 @@ export default {
         'brand-tint': '#f4f1f5',   // very light purple wash for surfaces
       },
       fontFamily: {
-        // Clean, Arial-esque native stack — nicer than Arial, no web-font load.
-        sans: ['"Segoe UI"', 'system-ui', '-apple-system', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
-        // Refined monospace for codes/figures — leads with Cascadia (Win 11), then Consolas.
-        mono: ['"Cascadia Code"', '"Cascadia Mono"', 'Consolas', 'ui-monospace', 'Menlo', 'monospace'],
+        // IBM Plex superfamily — professional, characterful, purpose-matched.
+        sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'Arial', 'sans-serif'],
+        serif: ['"IBM Plex Serif"', 'Georgia', 'Cambria', 'serif'],
+        mono: ['"IBM Plex Mono"', '"Cascadia Code"', 'Consolas', 'ui-monospace', 'Menlo', 'monospace'],
       },
       // Squared-off corners: crisp, premium feel (pills keep rounded-full).
       borderRadius: {

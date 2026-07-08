@@ -82,7 +82,7 @@ export default function MarketPulseView({ data, historicalData = {}, symbol, cur
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in">
       <header className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Market Explorer</h2>
+        <h2 className="font-serif text-2xl font-bold text-gray-900 tracking-tight">Market Explorer</h2>
         <p className="text-gray-500 text-sm">
           Browse <span className="font-bold text-brand">{currency}</span> assets — search, filter and drill into each one.
         </p>

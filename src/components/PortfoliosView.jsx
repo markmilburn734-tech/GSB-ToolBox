@@ -160,7 +160,7 @@ export default function PortfoliosView({ presets = {}, pricesData = {}, liveRate
             <header className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Model Portfolios</h2>
+                        <h2 className="font-serif text-2xl font-bold text-gray-900 tracking-tight">Model Portfolios</h2>
                         <p className="text-gray-500 text-sm">Detailed composition of the GSB model presets · prices shown in <span className="font-bold text-brand">{curr || currency}</span></p>
                     </div>
                 </div>
