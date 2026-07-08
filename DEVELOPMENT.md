@@ -113,6 +113,8 @@ Asset explorer: search/filter (class/region)/sort; detail panel with TER, vol, c
 
 ### TaxCalculatorView.jsx (CGT)
 UK CGT estimator, GBP-locked. 2024/25 rates (18/24%), £3k allowance, joint doubling, market buffer.
+- **Unused basic-rate band = `max(0, basicRateLimit − GROSS income)`** (limit £50,270 is a gross threshold). Earlier it subtracted *taxable* income, double-counting the personal allowance and over-granting the 18% band (a £60k earner wrongly blended to ~22.3% instead of the correct 24%). Verified in Python.
+- ⚠️ Rates/bands are a local `TAX_CONSTANTS` in the component, **not** in `constants.js` — annual updates need editing here (candidate to centralise).
 
 ### IHTCalculatorView.jsx
 See §7.

@@ -41,8 +41,12 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
         const totalGain = breakdown.reduce((sum, a) => sum + a.totalGain, 0);
         const taxableGain = Math.max(0, totalGain - remainingAllowance);
 
-        const taxableIncome = Math.max(0, income - activePersAllow);
-        const unusedBasicBand = Math.max(0, activeBasicRateLmt - taxableIncome);
+        // Unused basic-rate band = limit (a GROSS-income threshold, £50,270) minus
+        // GROSS income. Subtracting taxable income here double-counted the personal
+        // allowance and over-granted the 18% band (a £60k earner wrongly got headroom).
+        const grossIncome = parseFloat(income) || 0;
+        const taxableIncome = Math.max(0, grossIncome - activePersAllow);
+        const unusedBasicBand = Math.max(0, activeBasicRateLmt - grossIncome);
 
         const gainsAtLR = Math.min(taxableGain, unusedBasicBand);
         const gainsAtHR = Math.max(0, taxableGain - gainsAtLR);

@@ -600,7 +600,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       {(totalTarget > 0 || ratioOn) && (
         <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3 mb-4">
-            <div className="flex items-center gap-2"><TrendingUp size={18} className="text-brand" /><h3 className="font-bold text-gray-900">Rebalance directives & charges</h3>
+            <div className="flex items-center gap-2"><TrendingUp size={18} className="text-brand" /><h3 className="font-bold text-gray-900">Rebalance trades & charges</h3>
               {ratioOn && opt && <span className="px-2 py-0.5 rounded bg-brand6 text-brand text-[10px] font-extrabold">{(parseFloat(eqTarget) || 0).toFixed(0)}/{(100 - (parseFloat(eqTarget) || 0)).toFixed(0)} ratio</span>}
               <span className="text-[10px] text-gray-400 font-semibold">{rounding === 'margin' ? 'buys round down · sells round up' : 'exact units'}</span></div>
             <div className="flex items-center gap-2">

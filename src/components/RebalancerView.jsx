@@ -509,7 +509,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4 mb-4">
                         <div className="flex items-center gap-2">
                             <TrendingUp size={18} className="text-brand print:text-gray-800" />
-                            <h3 className="font-bold text-gray-900 text-base">Actionable Rebalance Directives</h3>
+                            <h3 className="font-bold text-gray-900 text-base">Rebalance Trades</h3>
                         </div>
                         
                         <div className="flex flex-col sm:flex-row items-center gap-3 print:hidden">
@@ -599,9 +599,6 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                     <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-2xl max-w-md w-full overflow-hidden animate-in zoom-in-95 duration-200">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
                             <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-brand rounded-lg flex items-center justify-center text-white">
-                                    <GSB size={14} color="white" />
-                                </div>
                                 <h3 className="font-bold text-gray-900 text-sm">GSB Asset Presets</h3>
                             </div>
                             <button onClick={() => setPresetModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100">
