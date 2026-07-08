@@ -224,8 +224,8 @@ export default function PerformanceAnalyticsView({
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4 animate-in fade-in duration-200">
 
-      {/* ── Header Panel ─────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+      {/* ── Header (plain, matches other views) ──────────────────────────── */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-1">
         <div>
           <h3 className="text-2xl font-bold text-gray-900 tracking-tight">GSB Analytics</h3>
           <p className="text-slate-500 text-xs font-medium mt-0.5 flex items-center gap-2">

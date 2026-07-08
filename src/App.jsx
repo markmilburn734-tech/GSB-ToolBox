@@ -59,6 +59,7 @@ export default function App() {
     // ── Core state ───────────────────────────────────────────────────────────
     const [activeTab,       setActiveTab]       = useState('rebalancer');
     const [activeCurrency,  setActiveCurrency]  = useState('USD');
+    const [curOpen,         setCurOpen]         = useState(false);
     const [pricesData,      setPricesData]      = useState({});
     const [historicalData,  setHistoricalData]  = useState({});
     /** @type {[import('./constants').InitialPresets, Function]} */
@@ -163,9 +164,7 @@ export default function App() {
             </div>
 
             {/* ── Navigation Header (dark purple banner) ─────────────────── */}
-            <nav className="sticky top-0 z-40 bg-[#2e1c34] border-b border-black/20 shadow-md">
-                {/* Smooth brand accent line along the bottom edge */}
-                <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-brand via-brand6 to-brand3" />
+            <nav className="sticky top-0 z-40 bg-[#2e1c34]">
                 <div className="max-w-7xl mx-auto px-4">
                     <div className="flex items-center justify-between h-16">
 
@@ -211,19 +210,34 @@ export default function App() {
                             )}
 
                             <div className="relative">
-                                <select
-                                    value={activeCurrency}
-                                    onChange={(e) => setActiveCurrency(e.target.value)}
+                                <button
+                                    onClick={() => setCurOpen((o) => !o)}
                                     aria-label="Display currency"
-                                    className="appearance-none cursor-pointer bg-white/10 border border-white/20 text-white font-bold text-xs rounded-md pl-3 pr-8 py-1.5 outline-none hover:border-white/40 focus:border-white transition-colors"
+                                    className="flex items-center gap-2 cursor-pointer bg-white/10 border border-white/20 text-white font-bold text-xs rounded-md pl-3 pr-2 py-1.5 outline-none hover:border-white/40 transition-colors"
                                 >
-                                    {Object.keys(CURRENCY_SYMBOLS).map((curr) => (
-                                        <option key={curr} value={curr} className="text-gray-900">
-                                            {CURRENCY_SYMBOLS[curr]} {curr}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronRight size={14} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rotate-90 text-white/70" />
+                                    <span className="text-brand3">{CURRENCY_SYMBOLS[activeCurrency]}</span> {activeCurrency}
+                                    <ChevronRight size={14} className={`text-white/70 transition-transform ${curOpen ? '-rotate-90' : 'rotate-90'}`} />
+                                </button>
+                                {curOpen && (
+                                    <>
+                                        <div className="fixed inset-0 z-10" onClick={() => setCurOpen(false)} />
+                                        <div className="absolute right-0 mt-2 w-32 bg-white rounded-lg border border-gray-200 shadow-xl p-1 z-20 animate-in fade-in slide-in-from-top-1 duration-150">
+                                            {Object.keys(CURRENCY_SYMBOLS).map((curr) => (
+                                                <button
+                                                    key={curr}
+                                                    onClick={() => { setActiveCurrency(curr); setCurOpen(false); }}
+                                                    className={`w-full text-left px-3 py-1.5 rounded-md text-xs font-bold flex items-center gap-2 transition-colors ${
+                                                        activeCurrency === curr
+                                                            ? 'bg-brand3/10 text-brand3'
+                                                            : 'text-gray-600 hover:bg-brand3/5 hover:text-brand3'
+                                                    }`}
+                                                >
+                                                    <span className="w-5 inline-block">{CURRENCY_SYMBOLS[curr]}</span> {curr}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -232,7 +246,9 @@ export default function App() {
 
             {/* ── Sub-tab bar (Analytics / Calculators groups) ───────────── */}
             {(activeGroup === 'rebalancer' || activeGroup === 'analytics' || activeGroup === 'calculators') && (
-                <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
+                <div className="bg-[#2e1c34] sticky top-16 z-30 shadow-md">
+                    {/* Brand accent line closes the dark header block */}
+                    <div className="absolute bottom-0 inset-x-0 h-0.5 bg-gradient-to-r from-brand via-brand6 to-brand3" />
                     <div className="max-w-7xl mx-auto px-4 flex items-center gap-1 h-12">
                         {SUBTABS[activeGroup].map((st) => (
                             <button
@@ -240,8 +256,8 @@ export default function App() {
                                 onClick={() => goTo(st.id)}
                                 className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
                                     activeTab === st.id
-                                        ? 'bg-brand3/10 text-brand3 ring-1 ring-brand3/20'
-                                        : 'text-gray-500 hover:text-gray-800 hover:bg-gray-50'
+                                        ? 'bg-brand text-brand3 shadow-sm ring-1 ring-white/10'
+                                        : 'text-white/55 hover:text-white hover:bg-white/5'
                                 }`}
                             >
                                 {st.label}

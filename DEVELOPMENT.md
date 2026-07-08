@@ -70,10 +70,10 @@ Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last 
 - **Brand:** `brand`/`brand2` `#573960` (purple), `brand3–5` `#ff3154` (accent), `brand6` `#816a88`, `brand-tint` `#f4f1f5` (light wash). `shadow-brand` = soft purple shadow.
 - **Font:** native Arial-esque stack (`Segoe UI` → `system-ui` → Helvetica/Arial) — no web-font load. Body uses `font-sans`.
 - **Squared corners:** the `borderRadius` scale is overridden small (2xl ≈ 6px, 3xl ≈ 8px) so all cards read crisp; `rounded-full` (pills/avatars) unaffected. Sharpen further by lowering these values.
-- **Top banner:** dark-purple (`#2e1c34`) sticky nav; wordmark + tabs in white, logo in a glassy `white/10` tile, currency `<select>` glassy. Brand-gradient accent line along its bottom edge.
+- **Dark header block:** the dark-purple (`#2e1c34`) sticky nav **and** the sub-tab bar share the same background and flow as one block (no divider between); the brand-gradient accent line sits at the **bottom of the sub-tab bar**. Wordmark white, GSB mark in pink (`brand3`, no tile). Currency is a **custom branded dropdown** (glassy trigger; menu items highlight pink `brand3` on active/hover) — not a native `<select>`.
 - **GSB watermark:** a fixed, **centred**, low-opacity (`0.11`) very-dark-purple (`#1f1226`) `<GSB>` logo with a drop-shadow sits behind content (`App.jsx`, `z-0`); `main` is `z-10`. `Icon`/`GSB` take a `strokeWidth` prop (watermark uses `0.7`). Centred behind the `max-w-7xl` column, so it's mostly visible in the side gutters.
-- **Tabs:** primary tabs (`TabButton`) = white text + **pink** (`brand3`) active underline on the dark banner; **sub-tabs active = pink** (`bg-brand3/10 text-brand3 ring-brand3/20`) on the white sub-bar.
-- **Unified view headers:** every view now leads with the same boxless pattern — `text-2xl font-bold text-gray-900 tracking-tight` title + a `text-sm text-gray-500` subtitle. The old icon tiles/boxes (washed `bg-brand6` **and** the `bg-brand` ones on CGT/IHT/Cash) were all removed. Add a title in this style to any new view.
+- **Tabs (text-only, no icons):** primary tabs (`TabButton`) = white text + **pink** (`brand3`) active underline; **sub-tabs active = purple highlight + pink text** (`bg-brand text-brand3`) on the dark bar, inactive `text-white/55`.
+- **Unified boxless view headers:** every view leads with the same pattern — `text-2xl font-bold text-gray-900 tracking-tight` title + `text-sm text-gray-500` subtitle, **on the page background (no white card)**. Analytics and the PB toolbar were un-boxed (title pulled out above the controls); old icon tiles all removed. Add a title in this style to any new view.
 
 ---
 

@@ -384,14 +384,13 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Page heading */}
+      <div className="mb-5">
+        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Private Bank Rebalancer</h2>
+        <p className="text-sm text-gray-500">Multi-currency · live FX · {bank} charges</p>
+      </div>
       {/* Toolbar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-gray-200 mb-5 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Private Bank Rebalancer</h2>
-            <p className="text-xs text-gray-400">Multi-currency · live FX · {bank} charges</p>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-end gap-4 bg-white p-5 rounded-2xl border border-gray-200 mb-5 shadow-sm">
         <div className="flex flex-wrap items-end gap-3">
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Bank</label>
             <select value={bank} onChange={(e) => setBank(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none">{banks.map((b) => <option key={b} value={b}>{b}</option>)}</select></div>
