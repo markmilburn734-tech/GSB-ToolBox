@@ -396,7 +396,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
         <p className="text-sm text-gray-500">Multi-currency · live FX · {bank} charges</p>
       </div>
       {/* Toolbar */}
-      <div className="flex flex-wrap items-end gap-4 bg-white/75 backdrop-blur-sm p-5 rounded-2xl border border-gray-200 mb-5 shadow-sm">
+      <div className="flex flex-wrap items-end gap-4 bg-white/75 p-5 rounded-2xl border border-gray-200 mb-5 shadow-sm">
         <div className="flex flex-wrap items-end gap-3">
           <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Bank</label>
             <select value={bank} onChange={(e) => setBank(e.target.value)} className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none">{banks.map((b) => <option key={b} value={b}>{b}</option>)}</select></div>
@@ -415,7 +415,7 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
             {addOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => { setAddOpen(false); setSearch(''); }} />
-                <div className="absolute right-0 mt-2 w-80 bg-white/75 backdrop-blur-sm rounded-xl border border-gray-200 shadow-xl p-2 z-20">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-gray-200 shadow-xl p-2 z-20">
                   <input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search models or assets…" className="w-full px-2.5 py-1.5 mb-1 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-brand" />
                   <button onClick={addBlank} className="w-full text-left px-2.5 py-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 rounded-lg">+ Blank holding</button>
                   <div className="max-h-72 overflow-y-auto mt-1">
@@ -602,8 +602,13 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
         )}
       </div>
 
-      {/* Directives */}
-      {(totalTarget > 0 || ratioOn) && (
+      {/* Directives — only once model targets total 100% (or the ratio optimiser is driving) */}
+      {totalTarget > 0 && !ratioOn && Math.abs(totalTarget - 100) >= 0.01 && (
+        <div className="bg-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200 text-amber-700 px-5 py-4 text-sm font-semibold mb-5">
+          Model targets total {totalTarget.toFixed(1)}% — set them to 100% (or enable the Equity/Bond ratio) to generate trades.
+        </div>
+      )}
+      {(Math.abs(totalTarget - 100) < 0.01 || ratioOn) && (
         <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3 mb-4">
             <div className="flex items-center gap-2"><TrendingUp size={18} className="text-brand" /><h3 className="font-bold text-gray-900">Rebalance trades & charges</h3>

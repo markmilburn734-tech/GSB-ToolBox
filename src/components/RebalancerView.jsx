@@ -15,6 +15,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
     const [cashFlow, setCashFlow] = useState('');
     const [presetModalOpen, setPresetModalOpen] = useState(false);
     const [addMenuOpen, setAddMenuOpen] = useState(false);
+    const [addSearch, setAddSearch] = useState('');
     const [selectionPath, setSelectionPath] = useState({ category: null, currency: null });
     
     // New Engine Controls
@@ -137,6 +138,15 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
     const totalCurrentValue = useMemo(() => assets.reduce((sum, asset) => sum + ((parseFloat(asset.price) || 0) * (parseFloat(asset.units) || 0)), 0), [assets]);
     const totalWeight = useMemo(() => assets.reduce((sum, asset) => sum + (parseFloat(asset.target) || 0), 0), [assets]);
     const totalNewValue = totalCurrentValue + (parseFloat(cashFlow) || 0);
+    // Trades are only produced once target weights total 100% (no under/over-deployment).
+    const weightsBalanced = Math.abs(totalWeight - 100) < 0.01;
+
+    // Searchable "Add Asset" data pool (name / ticker / ISIN).
+    const addPoolHits = useMemo(() => {
+        const q = addSearch.trim().toLowerCase();
+        const entries = Object.entries(pricesData || {});
+        return q ? entries.filter(([t, a]) => `${a.name} ${t} ${a.isin}`.toLowerCase().includes(q)) : entries;
+    }, [pricesData, addSearch]);
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('en-GB', { 
@@ -173,6 +183,8 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
     // Single source of truth for the actionable trade list — used by the on-screen
     // cards, the CSV export and the print receipt so they can never diverge.
     const directives = useMemo(() => {
+        // No trades until target weights total 100%.
+        if (Math.abs(totalWeight - 100) >= 0.01) return [];
         return assets.map(asset => {
             const targetPct = (parseFloat(asset.target) || 0) / 100;
             const idealAllocation = totalNewValue * targetPct;
@@ -340,7 +352,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                 <p className="text-sm text-gray-500">Multi-asset rebalance in a single display currency</p>
             </div>
             {/* Top Toolbar */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/75 backdrop-blur-sm p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm print:hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/75 p-6 rounded-2xl border border-gray-200 mb-6 shadow-sm print:hidden">
                 <div className="flex items-center gap-4 flex-1">
                     <div className="flex-1 max-w-xs">
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Cash Flow Injection</label>
@@ -367,16 +379,25 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                         </button>
                         {addMenuOpen && (
                             <>
-                                <div className="fixed inset-0 z-10" onClick={() => setAddMenuOpen(false)} />
-                                <div className="absolute right-0 mt-2 w-72 bg-white/75 backdrop-blur-sm rounded-xl border border-gray-200 shadow-xl p-2 z-20 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
-                                    <button onClick={() => { addBlankRow(); setAddMenuOpen(false); }} className="w-full text-left px-3 py-2 text-sm font-medium hover:bg-gray-50 rounded-lg flex items-center gap-2 text-gray-700">
+                                <div className="fixed inset-0 z-10" onClick={() => { setAddMenuOpen(false); setAddSearch(''); }} />
+                                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl border border-gray-200 shadow-xl p-2 z-20 space-y-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                    <input
+                                        autoFocus
+                                        value={addSearch}
+                                        onChange={(e) => setAddSearch(e.target.value)}
+                                        placeholder="Search name, ticker or ISIN…"
+                                        className="w-full px-2.5 py-1.5 mb-1 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:border-brand"
+                                    />
+                                    <button onClick={() => { addBlankRow(); setAddMenuOpen(false); setAddSearch(''); }} className="w-full text-left px-3 py-2 text-sm font-medium hover:bg-gray-50 rounded-lg flex items-center gap-2 text-gray-700">
                                         <Plus size={14} /> Blank Manual Entry
                                     </button>
                                     <div className="border-t border-gray-100 my-1" />
                                     <div className="px-3 py-1.5 text-xs font-bold text-gray-400 uppercase tracking-wider">Quick Add From Data Pool</div>
-                                    <div className="max-h-48 overflow-y-auto space-y-0.5">
-                                        {Object.entries(pricesData || {}).map(([ticker, asset]) => (
-                                            <button key={ticker} onClick={() => addAssetFromPreset({ name: asset.name, isin: asset.isin })} className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 rounded-md flex flex-col truncate">
+                                    <div className="max-h-56 overflow-y-auto space-y-0.5">
+                                        {addPoolHits.length === 0 ? (
+                                            <div className="px-3 py-2 text-xs text-gray-400 italic">No matches.</div>
+                                        ) : addPoolHits.map(([ticker, asset]) => (
+                                            <button key={ticker} onClick={() => { addAssetFromPreset({ name: asset.name, isin: asset.isin }); setAddSearch(''); }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 rounded-md flex flex-col truncate">
                                                 <span className="font-semibold text-gray-700 truncate">{asset.name}</span>
                                                 <span className="text-[10px] text-gray-400 font-mono">{ticker} · {asset.isin}</span>
                                             </button>
@@ -390,7 +411,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             </div>
 
             {/* Asset Allocation Matrix */}
-            <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-brand shadow-sm overflow-hidden mb-6 print:bg-white/75 backdrop-blur-sm print:shadow-none print:border-gray-300">
+            <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-brand shadow-sm overflow-hidden mb-6 print:bg-white print:shadow-none print:border-gray-300">
                 <div className="overflow-x-auto">
                     <table className="w-full min-w-[900px] text-left border-collapse">
                         <thead>
@@ -506,8 +527,13 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             </div>
 
             {/* Rebalancing Strategy Engine */}
-            {totalWeight > 0 && (
-                <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in slide-in-from-bottom-3 duration-200 print:bg-white/75 backdrop-blur-sm print:shadow-none print:border-gray-300">
+            {totalWeight > 0 && !weightsBalanced && (
+                <div className="bg-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200 text-amber-700 px-6 py-4 text-sm font-semibold mb-6 print:hidden">
+                    Target weights total {totalWeight.toFixed(2)}% — set them to 100% to generate trades.
+                </div>
+            )}
+            {weightsBalanced && (
+                <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-6 animate-in fade-in slide-in-from-bottom-3 duration-200 print:bg-white print:shadow-none print:border-gray-300">
                     
                     {/* Header & Controls */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4 mb-4">
