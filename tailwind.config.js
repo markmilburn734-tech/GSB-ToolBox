@@ -17,10 +17,10 @@ export default {
         'brand-tint': '#f4f1f5',   // very light purple wash for surfaces
       },
       fontFamily: {
-        // IBM Plex superfamily — professional, characterful, purpose-matched.
+        // Two families only: IBM Plex Sans for ALL text (headings + body, by weight),
+        // Consolas for ALL figures. Consolas has a plain zero (no dotted/slashed 0).
         sans: ['"IBM Plex Sans"', 'system-ui', '-apple-system', '"Segoe UI"', 'Arial', 'sans-serif'],
-        serif: ['"IBM Plex Serif"', 'Georgia', 'Cambria', 'serif'],
-        mono: ['"Cascadia Code"', '"Cascadia Mono"', 'Consolas', 'ui-monospace', 'Menlo', 'monospace'],
+        mono: ['Consolas', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       // Squared-off corners: crisp, premium feel (pills keep rounded-full).
       borderRadius: {

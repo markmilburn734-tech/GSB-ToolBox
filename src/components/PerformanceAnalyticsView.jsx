@@ -227,7 +227,7 @@ export default function PerformanceAnalyticsView({
       {/* ── Header (plain, matches other views) ──────────────────────────── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-1">
         <div>
-          <h3 className="font-serif text-2xl font-bold text-gray-900 tracking-tight">GSB Analytics</h3>
+          <h3 className="text-2xl font-bold text-gray-900 tracking-tight">GSB Analytics</h3>
           <p className="text-slate-500 text-xs font-medium mt-0.5 flex items-center gap-2">
             Net-of-fees performance comparison · Normalized base-100 index
             <span className="text-amber-600 font-bold flex items-center gap-1">
