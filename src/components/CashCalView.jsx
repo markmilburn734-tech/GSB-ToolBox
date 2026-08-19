@@ -9,12 +9,13 @@
 //     drawdown to the forecast-end age.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { DollarSign, Plus, Trash2, X } from './Icons';
 import { estimateIHT } from '../constants';
+import { factToCashCal } from '../factfind';
 
 const COLORS = ['#2d0738', '#9966ff', '#00a0f0', '#fc5b3f', '#10b981', '#f59e0b', '#ec4899', '#64748b', '#0ea5e9', '#a855f7'];
 
@@ -43,7 +44,7 @@ const defaultAmount = (type) => ({ statepension: 11000, inheritance: 50000, expe
 let _idc = 0;
 const uid = () => `x${++_idc}`;
 
-export default function CashCalView({ symbol = '$', currency = 'USD' }) {
+export default function CashCalView({ symbol = '$', currency = 'USD', factFind = null, factSeed = 0 }) {
   const [assets, setAssets] = useState([
     { id: uid(), name: 'Savings',             value: 112000, growth: 2 },
     { id: uid(), name: 'House / Property',    value: 565000, growth: 3 },
@@ -66,6 +67,24 @@ export default function CashCalView({ symbol = '$', currency = 'USD' }) {
   const [selEvent,    setSelEvent]    = useState(null);
 
   const trackRef = useRef(null);
+
+  // Seed from an uploaded Fact Find whenever it's applied (factSeed bumps).
+  useEffect(() => {
+    if (!factSeed || !factFind) return;
+    const s = factToCashCal(factFind);
+    setAssets(s.assets);
+    setEvents(s.events);
+    setCurrentAge(s.currentAge);
+    setInflation(s.inflation);
+    setSpending(s.spending);
+    setOtherIncome(s.otherIncome);
+    setIhtJoint(s.ihtJoint);
+    setCoverSum(s.coverSum);
+    setCoverType(s.coverType);
+    setCoverTerm(s.coverTerm);
+    setCoverTrust(s.coverTrust);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [factSeed]);
 
   const n   = (v, d = 0) => (typeof v === 'number' && !isNaN(v) ? v : d);
   const fmt  = (v) => new Intl.NumberFormat('en-GB', { style: 'currency', currency, maximumFractionDigits: 0 }).format(v || 0);

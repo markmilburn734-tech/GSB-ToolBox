@@ -29,16 +29,18 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
         { id: crypto.randomUUID(), name: "iShares VII plc Core S&P 500 UCITS ETF Acc USD", isin: "IE00B5BMR087", price: 0, units: 0, target: 34.50, priceOverridden: false },
     ]);
 
-    // Single source of truth for Price + Currency Conversion
-    const getLivePrice = (isin, targetCurrency) => {
+    // Single source of truth for Price + Currency Conversion.
+    // Resolve by TICKER first (the unique pricesData key) — an ISIN can be shared
+    // by several listings (different exchange/currency), so an ISIN-only match can
+    // return the wrong row. Fall back to an ISIN scan only when no ticker matches.
+    const getLivePrice = (isin, targetCurrency, ticker) => {
         // Synthetic cash is valued at par: 1 unit of the displayed currency.
-        if (isCash(isin)) return 1;
-        if (!isin || isin === "N/A") return 0;
-        let foundAsset = null;
+        if (isCash(isin) || isCash(ticker)) return 1;
 
-        const match = Object.values(pricesData || {}).find(p => p.isin === isin);
-        if (match) {
-            foundAsset = match;
+        let foundAsset = (ticker && pricesData[ticker]) ? pricesData[ticker] : null;
+        if (!foundAsset) {
+            if (!isin || isin === "N/A") return 0;
+            foundAsset = Object.values(pricesData || {}).find(p => p.isin === isin) || null;
         }
 
         if (foundAsset) {
@@ -71,7 +73,8 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                 id:              prior ? prior.id : crypto.randomUUID(),
                 name:            a.name,
                 isin:            a.isin,
-                price:           (prior && prior.priceOverridden) ? prior.price : getLivePrice(a.isin, cur),
+                ticker:          a.ticker || '',
+                price:           (prior && prior.priceOverridden) ? prior.price : getLivePrice(a.isin, cur, a.ticker),
                 units:           prior ? prior.units : '',
                 target:          a.target,
                 priceOverridden: prior ? prior.priceOverridden : false,
@@ -90,17 +93,18 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
 
     // Row Handlers
     const addBlankRow = () => {
-        setAssets(prev => [...prev, { id: crypto.randomUUID(), name: "New Asset", isin: "", price: '', units: '', target: '', priceOverridden: false }]);
+        setAssets(prev => [...prev, { id: crypto.randomUUID(), name: "New Asset", isin: "", ticker: '', price: '', units: '', target: '', priceOverridden: false }]);
     };
 
     const addAssetFromPreset = (asset) => {
-        const livePrice = getLivePrice(asset.isin, currency);
-        setAssets(prev => [...prev, { 
-            id: crypto.randomUUID(), 
-            name: asset.name, 
-            isin: asset.isin, 
-            price: livePrice, 
-            units: '', 
+        const livePrice = getLivePrice(asset.isin, currency, asset.ticker);
+        setAssets(prev => [...prev, {
+            id: crypto.randomUUID(),
+            name: asset.name,
+            isin: asset.isin,
+            ticker: asset.ticker || '',
+            price: livePrice,
+            units: '',
             target: '',
             priceOverridden: false
         }]);
@@ -123,8 +127,10 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                     updated.priceOverridden = true;
                 }
                 
-                // Attempt to auto-fetch price if a new ISIN is entered
+                // A manually-typed ISIN has no known ticker — clear any stale one so
+                // the lookup falls back to the ISIN, then attempt to auto-fetch price.
                 if (field === 'isin' && value) {
+                    updated.ticker = '';
                     const livePrice = getLivePrice(value, currency);
                     if (livePrice > 0 && !asset.priceOverridden) updated.price = livePrice;
                 }
@@ -215,7 +221,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
             rows.push([
                 esc(d.asset.name),
                 d.asset.isin || "MANUAL",
-                tickerForIsin(d.asset.isin),
+                d.asset.ticker || tickerForIsin(d.asset.isin),
                 d.isBuy ? "BUY" : "SELL",
                 d.displayUnits,
                 Math.abs(d.deltaValue).toFixed(2),
@@ -239,7 +245,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
         const sells = directives.filter(d => !d.isBuy).reduce((s, d) => s + Math.abs(d.deltaValue), 0);
         const body = directives.map(d => `<tr>
             <td>${escHtml(d.asset.name)}</td>
-            <td class="mono">${escHtml(tickerForIsin(d.asset.isin) || d.asset.isin || 'MANUAL')}</td>
+            <td class="mono">${escHtml(d.asset.ticker || tickerForIsin(d.asset.isin) || d.asset.isin || 'MANUAL')}</td>
             <td class="${d.isBuy ? 'buy' : 'sell'}">${d.isBuy ? 'BUY' : 'SELL'}</td>
             <td class="r mono">${d.isBuy ? '+' : '−'}${Math.abs(d.displayUnits)}</td>
             <td class="r b">${formatCurrency(Math.abs(d.deltaValue))}</td></tr>`).join('');
@@ -277,7 +283,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
     useEffect(() => {
         setAssets(prev => prev.map(asset => ({
             ...asset,
-            price: asset.priceOverridden ? asset.price : (getLivePrice(asset.isin, currency) || asset.price)
+            price: asset.priceOverridden ? asset.price : (getLivePrice(asset.isin, currency, asset.ticker) || asset.price)
         })));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currency, pricesData, liveRates]);
@@ -397,7 +403,7 @@ export default function RebalancerView({ presets, symbol, currency, setActiveCur
                                         {addPoolHits.length === 0 ? (
                                             <div className="px-3 py-2 text-xs text-gray-400 italic">No matches.</div>
                                         ) : addPoolHits.map(([ticker, asset]) => (
-                                            <button key={ticker} onClick={() => { addAssetFromPreset({ name: asset.name, isin: asset.isin }); setAddSearch(''); }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 rounded-md flex flex-col truncate">
+                                            <button key={ticker} onClick={() => { addAssetFromPreset({ name: asset.name, isin: asset.isin, ticker }); setAddSearch(''); }} className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 rounded-md flex flex-col truncate">
                                                 <span className="font-semibold text-gray-700 truncate">{asset.name}</span>
                                                 <span className="text-[10px] text-gray-400 font-mono">{ticker} · {asset.isin}</span>
                                             </button>

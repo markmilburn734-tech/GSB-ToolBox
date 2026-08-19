@@ -44,6 +44,13 @@ One published workbook, base URL in `src/constants.js` → `GOOGLE_SHEETS_CSV_UR
 - Portfolios cash rows use **synthetic `Cash`** (ISIN/Ticker = "Cash"); real money-market funds keep their tickers.
 - A few Portfolios ticker typos exist (`0P000TH0M.F` etc.) — data issue, not code.
 
+### Backend Apps Script (`apps-script/history-updater.gs`)
+The script that **populates** the Sheet lives inside the Sheet's Apps Script editor; `apps-script/history-updater.gs` is the **version-controlled reference copy** — keep them in sync. It fetches from Yahoo (`adjclose` = total return) and writes the Stocks/history tabs. Jobs:
+- **`RESET_HISTORY`** — **manual** (no trigger). Wipes + rebuilds both history sheets: daily `5y`, weekly `max` (since inception). **Batched** (time-budget + self-scheduling `_CONTINUE_RESET_HISTORY` trigger) so a big roster spans multiple runs and a timeout never leaves a half-cleared sheet.
+- **`UPDATE_HISTORY`** — **daily trigger, run every day.** Tops both sheets up to the latest close and **auto-backfills any ticker newly added to Stocks** (a ticker with no history → full fetch). The current week's weekly point is **rewritten each run** with the latest close (append on a new week); running on **Saturday finalises** the closed week. Only appends/overwrites → a timeout is harmless (catches up next day).
+- **`UPDATE_PRICES_ONLY`** — live price cols E–H on Stocks (unchanged).
+- **Why manual reset + daily append?** `adjclose` is retroactively rewritten when a fund distributes, so incremental append drifts at distribution dates; the occasional manual `RESET_HISTORY` re-bases it clean. Scaling: as-is the old full-rebuild capped at ~140 tickers (6-min Apps Script limit); this model + batching lifts that to the daily quota (~2,000/day consumer, ~8,600 Workspace). If the roster passes ~500, replace the whole-sheet reads in `UPDATE_HISTORY` with a marker column.
+
 ---
 
 ## 3. `constants.js` — shared logic (not just constants)
@@ -62,6 +69,7 @@ Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last 
 - **Rebalancer**: Standard (`rebalancer`) · Private Bank (`pbrebalancer`)
 - **Analytics**: Analytics (`analytics`) · Portfolios (`portfolios`) · Pulse (`market`)
 - **Calculators**: CGT (`tax`) · IHT (`IHT`) · Cash Planner (`cashcal`, tab label "Cash Planner")
+- **Fact Find** (`factfind`): standalone primary tab, no sub-tabs. Feeds Cash Planner + IHT via the `factSeed` token (see FactFindView in §5).
 
 - **All views stay mounted once visited** (each in a `hidden` div when inactive), so every tab's inputs persist across tab switches — **in-memory only; a full refresh clears everything** (no localStorage, by request). Driven by a `visited` map in `App.jsx`.
 - **Code-split:** each view is `React.lazy(() => import(...))` inside its own per-view `<Suspense>`, so only the visited tab's chunk downloads (initial load = Rebalancer only). Per-view Suspense (not one global) prevents a first-visit load from unmounting already-mounted tabs.
@@ -124,6 +132,12 @@ UK CGT estimator, GBP-locked. 2024/25 rates (18/24%), £3k allowance, joint doub
 
 ### IHTCalculatorView.jsx
 See §7.
+
+### FactFindView.jsx (+ `src/factfind.js`)
+Client **fact-find form** on its own primary tab. Sections: client · planning assumptions · assets · lifetime gifts · protection · IHT options — all held in one local object of the `EMPTY_FACT_FIND` shape.
+- **Export** → downloads the fact find as `.json` (the "save" — no backend). **Import** → uploads a `.json` and repopulates the form (`normaliseFactFind` fills missing keys).
+- **Load into Cash Planner & IHT** → App bumps a `factSeed` token and stores `factFind`; each target view has a `useEffect([factSeed])` that maps the data in via `factToCashCal` / `factToIHT` (pure mappers in `factfind.js`) and jumps to Cash Planner. Seeding only fires when `factSeed > 0`, so it never clobbers a tool's defaults on first mount, and re-applying overwrites. Assets feed both tools (value+growth → Cash Planner; value+IHT-status → IHT estate); Cash Planner's single cover slot aggregates all policies.
+- Currency: the form uses the active symbol, but IHT is GBP-locked — treat fact-find money as GBP (UK estate/cashflow context).
 
 ### CashCalView.jsx
 Multi-asset cash-flow / longevity planner: editable assets (category quick-add), assumptions (age/inflation/spending), **drag-and-drop Events timeline** (Retirement, State Pension, Inheritance, Lump Expense, Forecast End — HTML5 DnD, desktop only), stacked-bar projection with drawdown. **Estate & IHT card**: `estimateIHT` on the projected estate + **life cover** (term policies lapse if the term ends before the forecast age; in-trust offsets, non-trust adds to estate).

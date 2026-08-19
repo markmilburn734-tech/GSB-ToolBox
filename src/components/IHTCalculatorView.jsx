@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Trash2, TrendingUp, GSB } from './Icons';
 import { IHT, giftTaperMultiplier } from '../constants';
+import { factToIHT } from '../factfind';
 
-export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pricesData = {} }) {
+export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pricesData = {}, factFind = null, factSeed = 0 }) {
     const [assets, setAssets]     = useState([]);
     const [gifts, setGifts]       = useState([]);
     const [policies, setPolicies] = useState([]);
@@ -14,6 +15,20 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
     const [claimRNRB, setClaimRNRB]     = useState(true);
     const [pensionInEstate, setPension] = useState(false); // Apr-2027 rule
     const [addMenuOpen, setAddMenuOpen] = useState(false);
+
+    // Seed from an uploaded Fact Find whenever it's applied (factSeed bumps).
+    useEffect(() => {
+        if (!factSeed || !factFind) return;
+        const s = factToIHT(factFind);
+        setAssets(s.assets);
+        setGifts(s.gifts);
+        setPolicies(s.policies);
+        setMarried(s.married);
+        setClaimRNRB(s.claimRNRB);
+        setCharity(s.charity);
+        setPension(s.pensionInEstate);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [factSeed]);
 
     // ── Calculation engine ────────────────────────────────────────────────────
     const results = useMemo(() => {

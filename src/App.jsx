@@ -23,6 +23,7 @@ const PortfoliosView            = lazy(() => import('./components/PortfoliosView
 const TaxCalculatorView         = lazy(() => import('./components/TaxCalculatorView'));
 const IHTCalculatorView         = lazy(() => import('./components/IHTCalculatorView'));
 const CashCalView               = lazy(() => import('./components/CashCalView'));
+const FactFindView              = lazy(() => import('./components/FactFindView'));
 import { TabButton }            from './components/TabButton';
 import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase, DollarSign, ChevronRight } from './components/Icons';
  
@@ -64,6 +65,9 @@ export default function App() {
     // Tabs visited this session stay mounted (hidden) so their inputs persist
     // across tab switches. A full page refresh clears this (in-memory only).
     const [visited,         setVisited]         = useState({ rebalancer: true });
+    // Fact Find data + a "seed token" bumped when the user loads it into the tools.
+    const [factFind,        setFactFind]        = useState(null);
+    const [factSeed,        setFactSeed]        = useState(0);
     const [pricesData,      setPricesData]      = useState({});
     const [historicalData,  setHistoricalData]  = useState({});
     /** @type {[import('./constants').InitialPresets, Function]} */
@@ -90,6 +94,7 @@ export default function App() {
     const activeGroup =
         ANALYTICS_TABS.includes(activeTab) ? 'analytics'
         : CALC_TABS.includes(activeTab)    ? 'calculators'
+        : activeTab === 'factfind'         ? 'factfind'
         : 'rebalancer';
 
     const goTo = (tab) => {
@@ -98,6 +103,13 @@ export default function App() {
         if (REBAL_TABS.includes(tab))     setLastRebalTab(tab);
         if (ANALYTICS_TABS.includes(tab)) setLastAnalyticsTab(tab);
         if (CALC_TABS.includes(tab))      setLastCalcTab(tab);
+    };
+
+    // Fact Find → seed the tools and jump to Cash Planner so it's visibly populated.
+    const applyFactFind = (data) => {
+        setFactFind(data);
+        setFactSeed((s) => s + 1);
+        goTo('cashcal');
     };
 
     const SUBTABS = {
@@ -198,6 +210,12 @@ export default function App() {
                                     onClick={() => goTo(lastCalcTab)}
                                     icon={<DollarSign size={16} />}
                                     label="Calculators"
+                                />
+                                <TabButton
+                                    active={activeGroup === 'factfind'}
+                                    onClick={() => goTo('factfind')}
+                                    icon={null}
+                                    label="Fact Find"
                                 />
                             </div>
                         </div>
@@ -369,7 +387,7 @@ export default function App() {
                 <div className={activeTab === 'IHT' ? '' : 'hidden'}>
                     {visited.IHT && (
                         <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
-                            <IHTCalculatorView symbol="£" currency="GBP" pricesData={gbpMarketData} />
+                            <IHTCalculatorView symbol="£" currency="GBP" pricesData={gbpMarketData} factFind={factFind} factSeed={factSeed} />
                         </Suspense>
                     )}
                 </div>
@@ -377,7 +395,15 @@ export default function App() {
                 <div className={activeTab === 'cashcal' ? '' : 'hidden'}>
                     {visited.cashcal && (
                         <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
-                            <CashCalView symbol={symbol} currency={activeCurrency} />
+                            <CashCalView symbol={symbol} currency={activeCurrency} factFind={factFind} factSeed={factSeed} />
+                        </Suspense>
+                    )}
+                </div>
+
+                <div className={activeTab === 'factfind' ? '' : 'hidden'}>
+                    {visited.factfind && (
+                        <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            <FactFindView symbol={symbol} onApply={applyFactFind} />
                         </Suspense>
                     )}
                 </div>
