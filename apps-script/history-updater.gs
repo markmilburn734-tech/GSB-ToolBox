@@ -288,6 +288,12 @@ function UPDATE_HISTORY() {
   if (!lock.tryLock(5000)) { console.warn("UPDATE_HISTORY already running — skipping."); return; }
   try {
     const ss     = SpreadsheetApp.getActiveSpreadsheet();
+    // Don't run while a RESET is mid-flight (it appends at saved row offsets that a
+    // concurrent top-up would invalidate) — the reset schedules its own continuation.
+    if (PropertiesService.getScriptProperties().getProperty(CONFIG.RESET_STATE_KEY)) {
+      console.warn("UPDATE_HISTORY skipped — a RESET_HISTORY is in progress."); return;
+    }
+
     const source = _getSheet(ss, CONFIG.STOCKS_SHEET);
     const daily  = _getSheet(ss, CONFIG.DAILY_HISTORY_SHEET);
     const weekly = _getSheet(ss, CONFIG.WEEKLY_HISTORY_SHEET);
@@ -308,11 +314,12 @@ function UPDATE_HISTORY() {
     for (let i = 1; i < rows.length; i++) {
       const raw = _parseTicker(rows[i][CONFIG.TICKER_COLUMN]);
       if (!raw) continue;
+      const key = raw.toUpperCase();   // case/whitespace-insensitive history key
       const r = _resolveYahooTicker(raw, isinMap);
       if (!r.ok) { failed++; console.warn(`UPDATE FAIL ${raw}: ${r.error}`); continue; }
 
       // ── NEW ticker → full backfill ─────────────────────────────────────────
-      if (!dailyLast.has(raw)) {
+      if (!dailyLast.has(key)) {
         const d = _fetchHistoryWithRetry(raw, r.ticker, CONFIG.HISTORY_INTERVAL_DAILY, CONFIG.DAILY_RANGE);
         if (d.ok && d.rows.length) addDaily.push(...d.rows);
         Utilities.sleep(CONFIG.FETCH_SLEEP_MS);
@@ -329,13 +336,13 @@ function UPDATE_HISTORY() {
       if (!d.ok || !d.rows.length) { if (!d.ok) failed++; continue; }
 
       // Daily: append points newer than what's already stored.
-      const lastTs = dailyLast.get(raw);
+      const lastTs = dailyLast.get(key);
       for (const row of d.rows) if (row[1].getTime() > lastTs) addDaily.push(row);
 
       // Weekly: rewrite the current week's point with the latest close.
       const latest  = d.rows[d.rows.length - 1];        // [ticker, Date, price]
       const wkStart = _weekStart(latest[1]);            // Monday of the latest date's week
-      const wl      = weeklyLast.get(raw);
+      const wl      = weeklyLast.get(key);
       if (wl && _weekStart(new Date(wl.ts)).getTime() === wkStart.getTime()) {
         overwrite.push({ row: wl.row, price: latest[2] });   // same week → overwrite price
       } else {
@@ -364,8 +371,9 @@ function _lastDateMap(sheet) {
   const vals = sheet.getRange(2, 1, last - 1, 2).getValues();   // [ticker, Date]
   for (const [ticker, date] of vals) {
     if (!ticker || !(date instanceof Date)) continue;
+    const k = ticker.toString().trim().toUpperCase();   // case/whitespace-insensitive
     const t = date.getTime();
-    if (!m.has(ticker) || t > m.get(ticker)) m.set(ticker, t);
+    if (!m.has(k) || t > m.get(k)) m.set(k, t);
   }
   return m;
 }
@@ -379,9 +387,10 @@ function _lastWeeklyMap(sheet) {
   for (let i = 0; i < vals.length; i++) {
     const ticker = vals[i][0], date = vals[i][1];
     if (!ticker || !(date instanceof Date)) continue;
+    const k = ticker.toString().trim().toUpperCase();   // case/whitespace-insensitive
     const t = date.getTime();
-    const cur = m.get(ticker);
-    if (!cur || t > cur.ts) m.set(ticker, { ts: t, row: i + 2 });   // +2: skip header, 1-based
+    const cur = m.get(k);
+    if (!cur || t > cur.ts) m.set(k, { ts: t, row: i + 2 });   // +2: skip header, 1-based
   }
   return m;
 }

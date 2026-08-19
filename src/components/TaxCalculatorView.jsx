@@ -19,6 +19,9 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
     // --- Calculation Engine ---
     const results = useMemo(() => {
         const breakdown = assets.map(a => {
+            // Deliberately PRUDENT: the buffer is ADDED to the sell price (+0.5%), so
+            // the estimated gain — and the tax owed — is nudged slightly higher, giving
+            // a conservative (over-provisioned) estimate. Not a downside/slippage haircut.
             const bufferedSellPrice = a.currentPrice * (1 + TAX_CONSTANTS.MARKET_BUFFER);
             const totalGain = (bufferedSellPrice - a.ogPrice) * a.units;
             return { ...a, totalGain, bufferedSellPrice };
@@ -177,6 +180,11 @@ export default function TaxCalculatorView({ symbol = "£", currency = "GBP", pri
                         <p className="text-2xl font-mono font-bold text-white leading-none">
                             {formatCurrency(results.remainingAllowance)}
                         </p>
+                        {isJoint && (
+                            <p className="text-[10px] text-white/50 mt-2 leading-snug">
+                                Simplified: doubles the allowance &amp; bands off the single income figure. UK CGT is assessed per person — for precise joint figures, run each spouse separately.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>

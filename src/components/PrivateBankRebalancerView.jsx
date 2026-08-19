@@ -42,11 +42,12 @@ const classifyEB = (cls, vol, bucket) => {
   if (bucket === 'bond')   return [0, 1];
   if (bucket === 'cash')   return [0, 0];
   const c = (cls || '').toLowerCase(), v = (vol || '').toLowerCase();
-  if (c.includes('money market')) return [0, 0];
-  if (c.includes('bond'))         return [0, 1];
-  if (c.includes('equit'))        return [1, 0];   // Equity Funds, Equities / ETFs
-  if (c === 'funds')              return VOL_TIER[v] || [0.6, 0.4];
-  return [1, 0];
+  if (c.includes('money market') || c.includes('cash'))  return [0, 0];
+  // Bonds are labelled many ways in the sheet — not just "bond".
+  if (/bond|fixed|gilt|treasur|govern|govt/.test(c))     return [0, 1];
+  if (c.includes('equit'))                               return [1, 0];   // Equity Funds, Equities / ETFs
+  if (c === 'funds')                                     return VOL_TIER[v] || [0.6, 0.4];
+  return [0, 0];   // unknown class → uncategorised (NOT counted as equity); set it via the Eq/Bd/Csh selector
 };
 const BUCKETS = [['auto', 'Auto'], ['equity', 'Eq'], ['bond', 'Bd'], ['cash', 'Csh']];
 
@@ -176,6 +177,9 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
   }, [leaves, loans, cashFlow, base, liveRates]);
 
   const totalTarget = items.reduce((s, it) => s + (parseFloat(it.target) || 0), 0);
+  // True deployed target = sum of EFFECTIVE leaf targets (model % × child weight),
+  // so a model set to 100% whose children only sum to 95% correctly reads as 95%.
+  const leafTargetSum = leaves.reduce((s, l) => s + (l.effTarget || 0), 0);
   const pct = (b) => (totals.assetBase > 0 ? (b / totals.assetBase) * 100 : 0);
 
   // model aggregates
@@ -539,8 +543,8 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
           <span className="text-gray-500">Portfolio: <b className="text-gray-900">{fmtBase(totals.assetBase)}</b></span>
           <span className="text-gray-500">Net worth: <b className="text-gray-900">{fmtBase(totals.netWorth)}</b></span>
           <span className="text-gray-500">Investable: <b className="text-brand">{fmtBase(totals.investable)}</b></span>
-          <span className={`px-2 py-0.5 rounded-md text-xs font-extrabold flex items-center gap-1 ${Math.abs(totalTarget - 100) < 0.01 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
-            Target {totalTarget.toFixed(1)}% {Math.abs(totalTarget - 100) < 0.01 ? <Check size={11} /> : <X size={11} />}
+          <span className={`px-2 py-0.5 rounded-md text-xs font-extrabold flex items-center gap-1 ${Math.abs(leafTargetSum - 100) < 0.01 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+            Target {leafTargetSum.toFixed(1)}% {Math.abs(leafTargetSum - 100) < 0.01 ? <Check size={11} /> : <X size={11} />}
           </span>
         </div>
       </div>
@@ -603,12 +607,12 @@ export default function PrivateBankRebalancerView({ presets = {}, pricesData = {
       </div>
 
       {/* Directives — only once model targets total 100% (or the ratio optimiser is driving) */}
-      {totalTarget > 0 && !ratioOn && Math.abs(totalTarget - 100) >= 0.01 && (
+      {leafTargetSum > 0 && !ratioOn && Math.abs(leafTargetSum - 100) >= 0.01 && (
         <div className="bg-amber-50/80 backdrop-blur-sm rounded-2xl border border-amber-200 text-amber-700 px-5 py-4 text-sm font-semibold mb-5">
-          Model targets total {totalTarget.toFixed(1)}% — set them to 100% (or enable the Equity/Bond ratio) to generate trades.
+          Effective targets total {leafTargetSum.toFixed(1)}% — set model and constituent weights to 100% (or enable the Equity/Bond ratio) to generate trades.
         </div>
       )}
-      {(Math.abs(totalTarget - 100) < 0.01 || ratioOn) && (
+      {(Math.abs(leafTargetSum - 100) < 0.01 || ratioOn) && (
         <div className="bg-white/75 backdrop-blur-sm rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3 mb-4">
             <div className="flex items-center gap-2"><TrendingUp size={18} className="text-brand" /><h3 className="font-bold text-gray-900">Rebalance trades & charges</h3>

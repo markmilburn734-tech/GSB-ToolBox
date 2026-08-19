@@ -123,30 +123,40 @@ function AnalyticsTooltip({ active, payload, finalStats, COLORS }) {
         {label}
       </p>
       <div className="space-y-1.5">
-        {payload.map((entry, idx) => {
-          if (entry.value === null || entry.value === undefined) return null;
-          const pctKey = `pct_${idx}`;
-          const pct    = entry.payload?.[pctKey];
-          const sign   = pct !== null && pct !== undefined && pct >= 0 ? '+' : '';
-          return (
-            <div key={idx} className="flex items-center justify-between gap-6">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }} />
-                <span className="text-slate-300 truncate max-w-[90px] text-[10px]">
-                  {finalStats[idx]?.name || `Series ${idx + 1}`}
-                </span>
+        {(() => {
+          // Each series is drawn as BOTH an Area and a Line, so `payload` holds two
+          // entries per series. Key off dataKey ("series_N") to get the true series
+          // index and de-dupe, instead of the positional loop index (which mislabels
+          // colour/return and shows every series twice).
+          const seen = new Set();
+          return payload.map((entry) => {
+            const dk = entry.dataKey;
+            if (!dk || !dk.startsWith('series_') || seen.has(dk)) return null;
+            seen.add(dk);
+            if (entry.value === null || entry.value === undefined) return null;
+            const idx  = Number(dk.split('_')[1]);
+            const pct  = entry.payload?.[`pct_${idx}`];
+            const sign = pct !== null && pct !== undefined && pct >= 0 ? '+' : '';
+            return (
+              <div key={dk} className="flex items-center justify-between gap-6">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[idx] }} />
+                  <span className="text-slate-300 truncate max-w-[90px] text-[10px]">
+                    {finalStats[idx]?.name || `Series ${idx + 1}`}
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-slate-400 text-[9px] mr-1.5">
+                    {entry.value.toFixed(2)}
+                  </span>
+                  <span className={`font-bold text-[11px] ${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {sign}{pct !== null && pct !== undefined ? pct.toFixed(2) : '—'}%
+                  </span>
+                </div>
               </div>
-              <div className="text-right shrink-0">
-                <span className="text-slate-400 text-[9px] mr-1.5">
-                  {entry.value.toFixed(2)}
-                </span>
-                <span className={`font-bold text-[11px] ${pct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                  {sign}{pct !== null && pct !== undefined ? pct.toFixed(2) : '—'}%
-                </span>
-              </div>
-            </div>
-          );
-        })}
+            );
+          });
+        })()}
       </div>
     </div>
   );

@@ -7,12 +7,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { getVolBadgeStyles } from './PerformanceLogic';
+import { getVolBadgeStyles, stitchDiscontinuities } from './PerformanceLogic';
 
 // Compact return-over-timeframe from a { dates, prices } history series.
 function returnOver(series, key) {
   if (!series || !series.prices || series.prices.length < 2) return null;
-  const { dates, prices } = series;
+  const dates = series.dates;
+  // Repair denomination/split glitches first — otherwise a redenominated series
+  // (e.g. SMEA.L ×100) reports absurd returns (+14,000%).
+  const prices = stitchDiscontinuities(series.prices.map(v => parseFloat(v) || 0));
   const end = dates[dates.length - 1];
   const d = new Date(end);
   let startMs;

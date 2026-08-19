@@ -42,7 +42,10 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
             if (a.ihtStatus === 'Exempt') reliefApplied = rawValue;                                  // spouse etc.
             else if (a.ihtStatus === 'Pension') reliefApplied = pensionInEstate ? 0 : rawValue;      // exempt until Apr-2027
             else if (a.ihtStatus === 'Business Relief') reliefApplied = rawValue * ((parseFloat(a.reliefRate) || 0) / 100);
-            return { ...a, rawValue, reliefApplied, taxableValue: Math.max(0, rawValue - reliefApplied) };
+            // Liabilities (negative value, e.g. a mortgage) stay negative so they
+            // reduce the estate; positive assets are floored at 0 after relief.
+            const taxableValue = rawValue < 0 ? rawValue : Math.max(0, rawValue - reliefApplied);
+            return { ...a, rawValue, reliefApplied, taxableValue };
         });
         const totalGrossEstate      = breakdown.reduce((s, a) => s + a.rawValue, 0);
         const totalReliefsClaimed   = breakdown.reduce((s, a) => s + a.reliefApplied, 0);
@@ -78,7 +81,7 @@ export default function IHTCalculatorView({ symbol = '£', currency = 'GBP', pri
         const bands = estateNRB + effectiveRNRB;
 
         // Charitable legacy (exempt) + 36% reduced-rate test (≥10% of the baseline)
-        const charityAmt = Math.min(parseFloat(charity) || 0, chargeablePreCharity);
+        const charityAmt = Math.min(parseFloat(charity) || 0, Math.max(0, chargeablePreCharity));
         const baseline = Math.max(0, chargeablePreCharity - bands);
         const charityQualifies = charityAmt > 0 && charityAmt >= 0.10 * baseline;
         const estateRate = charityQualifies ? 0.36 : IHT.RATE;

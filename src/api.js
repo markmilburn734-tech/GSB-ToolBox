@@ -1,7 +1,8 @@
 //─────────────────────────────────────────────────────────────────────────────
 // api.js
 //
-// Orchestration engine: fetches four Google Sheets CSV tabs in parallel,
+// Orchestration engine: fetches six Google Sheets CSV tabs in parallel
+// (Stocks, Daily_1Y, Monthly_5Y, Currencies, Portfolios, Charges),
 // parses and cross-references them, and delivers a single structured payload
 // to the caller via `onComplete`.
 //
@@ -106,7 +107,6 @@ function processStocks(rows) {
             isin:       sanitise(col(row, 'ISIN', 'isin')).toUpperCase() || 'N/A',
             name:       sanitise(col(row, 'Name', 'name'))                || 'Unknown Asset',
             currency:   sanitise(col(row, 'Currency', 'currency')).toUpperCase() || 'USD',
-            ytd:        parseFloat(String(col(row, '% Off High', '% off high') ?? '0')) || 0,
             ter:        parseFloat(String(col(row, 'TER/OCR', 'ter')           ?? '0')) || 0,
             volatility: sanitise(col(row, 'Volatility Index', 'volatility'))   || 'Average',
             assetClass: sanitise(col(row, 'Class', 'class', 'Asset Class'))     || 'Other',
@@ -143,7 +143,8 @@ function processHistory(rows, historyKey) {
  
         const dateRaw = sanitise(col(row, 'Date', 'date', 'Timestamp'));
         const t = new Date(dateRaw).getTime();   // epoch ms (NaN if unparseable)
- 
+        if (isNaN(t)) return;   // drop unparseable dates — a NaN would poison the aligned series
+
         if (!grouped[ticker]) grouped[ticker] = [];
         grouped[ticker].push({ t, price });
     });

@@ -47,15 +47,6 @@ const TRADING_DAYS_PER_YEAR     = 252;
 const TRADING_WEEKS_PER_YEAR    = 52;
 const TRADING_MONTHS_PER_YEAR   = 12;
 
-// ─── Timeframe helpers ───────────────────────────────────────────────────────
-
-function getYTDDays() {
-  const now   = new Date();
-  const start = new Date(now.getFullYear(), 0, 1);
-  const calendarDays = Math.max(1, Math.floor((now - start) / 86400000));
-  return Math.floor(calendarDays * (TRADING_DAYS_PER_YEAR / 365));
-}
-
 // ─── Volatility badge styling (exported for use in view) ─────────────────────
 
 export function getVolBadgeStyles(vol) {
@@ -108,7 +99,7 @@ function computeAnnualizedVolatility(indexValues, periodsPerYear = TRADING_DAYS_
  * @param {number} threshold
  * @returns {number[]}
  */
-function stitchDiscontinuities(prices, threshold = 3) {
+export function stitchDiscontinuities(prices, threshold = 3) {
   if (!prices || prices.length < 2) return prices;
   const out = prices.slice();
   for (let i = out.length - 1; i > 0; i--) {
@@ -180,22 +171,26 @@ function computeNetIndex(inputs, axis, startMs, dragPct = 0) {
   const { holdings } = inputs;
   const YEAR_MS = 365.25 * 24 * 3600 * 1000;
 
-  // Base price per holding = price as of the window start; if the holding
-  // starts mid-window, fall back to its first in-window price.
+  // Base price per holding = price as of the window start. A holding that only
+  // STARTS mid-window has no base (b == null) and is EXCLUDED entirely — this
+  // keeps `presentWeight` constant across the axis, so a younger holding entering
+  // part-way through can't rebase (jump) the whole composite. Selections that
+  // therefore lose a constituent simply lack full-window history for this frame.
   const bases = holdings.map((h) => {
-    let b = priceAsOf(h.dates, h.prices, startMs);
-    if (b == null) {
-      for (let i = 0; i < h.dates.length; i++) {
-        if (h.dates[i] >= startMs && h.prices[i] > 0) { b = h.prices[i]; break; }
-      }
-    }
+    const b = priceAsOf(h.dates, h.prices, startMs);
     return (b != null && b > 0) ? b : null;
   });
 
   // Per-holding pointer for an amortised forward-fill walk across the axis.
   const ptr = holdings.map(() => 0);
 
+  // The series has no data past its own freshest point — beyond it, emit null so
+  // the line ends instead of flat-lining to a fresher sibling series' end date.
+  const seriesEndMs = holdings.reduce(
+    (m, h) => (h.dates.length ? Math.max(m, h.dates[h.dates.length - 1]) : m), -Infinity);
+
   return axis.map((t) => {
+    if (t > seriesEndMs) return null;
     let acc = 0;
     let presentWeight = 0;
     holdings.forEach((h, i) => {
@@ -232,12 +227,12 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
   // points — not monthly/60, which previously showed only ~14 months and
   // under-annualised volatility by ~2x.
   const TIMEFRAMES = useMemo(() => ({
-    '3m':  { label: '3M',  source: 'Daily_1Y',   points: 63,           periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
-    '6m':  { label: '6M',  source: 'Daily_1Y',   points: 126,          periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
-    'ytd': { label: 'YTD', source: 'Daily_1Y',   points: getYTDDays(), periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
-    '1y':  { label: '1Y',  source: 'Daily_1Y',   points: 252,          periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
-    '3y':  { label: '3Y',  source: 'Daily_1Y',   points: 756,          periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
-    '5y':  { label: '5Y',  source: 'Monthly_5Y', points: 260,          periodsPerYear: TRADING_WEEKS_PER_YEAR, cadence: 'weekly' },
+    '3m':  { label: '3M',  source: 'Daily_1Y',   periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '6m':  { label: '6M',  source: 'Daily_1Y',   periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    'ytd': { label: 'YTD', source: 'Daily_1Y',   periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '1y':  { label: '1Y',  source: 'Daily_1Y',   periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '3y':  { label: '3Y',  source: 'Daily_1Y',   periodsPerYear: TRADING_DAYS_PER_YEAR,  cadence: 'daily'  },
+    '5y':  { label: '5Y',  source: 'Monthly_5Y', periodsPerYear: TRADING_WEEKS_PER_YEAR, cadence: 'weekly' },
   }), []);
 
   const [timeframe, setTimeframe] = useState('1y');
@@ -454,6 +449,14 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     return [{ ticker: sel.assetTicker, target: 100 }];
   }, [presets]);
 
+  // Uppercased history-key → original-key map, built once per historicalData
+  // (avoids an O(keys) scan per holding per recompute).
+  const historyKeyMap = useMemo(() => {
+    const m = {};
+    Object.keys(historicalData).forEach(k => { m[k.trim().toUpperCase()] = k; });
+    return m;
+  }, [historicalData]);
+
   // ══════════════════════════════════════════════════════════════════════════
   // SERIES CALCULATION  —  Net-of-Fees, Base-100 Normalized
   // ══════════════════════════════════════════════════════════════════════════
@@ -488,10 +491,7 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
 
       if (cash || rawTicker === 'N/A' || (!rawTicker && !rawIsin)) return;
 
-      const dataKey = Object.keys(historicalData).find(k => {
-        const u = k.trim().toUpperCase();
-        return u === rawTicker || u === rawIsin;
-      });
+      const dataKey = historyKeyMap[rawTicker] || historyKeyMap[rawIsin];
       const series = dataKey ? historicalData[dataKey]?.[source] : null;
       if (!series || !series.prices || series.prices.length === 0) {
         console.warn(`[GSB Analytics] No "${source}" history for: ${rawTicker || rawIsin}`);
@@ -508,7 +508,7 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
     if (holdings.length === 0) return null;
     const blendedTer = totalWeight > 0 ? weightedTer / totalWeight : 0;
     return { holdings, blendedTer };
-  }, [historicalData, pricesData, resolvePortfolio]);
+  }, [historicalData, historyKeyMap, pricesData, resolvePortfolio]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // STRUCTURAL METRICS  —  TER factsheet with weighted contribution column
@@ -646,21 +646,42 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
    */
   const seriesSummaryStats = useMemo(() => {
     const config = TIMEFRAMES[timeframe];
+    const source = config.source;
+
+    // Global window end = latest dated point across all selections (matches chartData).
+    const inputs = selections.map(sel => resolveSeriesInputs(sel, source));
+    let endMs = -Infinity;
+    inputs.forEach(inp => inp?.holdings.forEach(h => {
+      if (h.dates.length) endMs = Math.max(endMs, h.dates[h.dates.length - 1]);
+    }));
+    const startMs = isFinite(endMs) ? windowStartMs(endMs, timeframe) : 0;
 
     return selections.map((sel, idx) => {
-      // Extract the index series values (non-null) for volatility calculation
-      const indexValues = chartData
-        .map(d => d[`series_${idx}`])
-        .filter(v => v !== null && v !== undefined);
-
-      const lastIndex = indexValues[indexValues.length - 1] ?? 100;
+      // Cumulative return comes from the DISPLAYED (union-axis) series, for chart consistency.
+      const chartVals = chartData.map(d => d[`series_${idx}`]).filter(v => v !== null && v !== undefined);
+      const lastIndex = chartVals[chartVals.length - 1] ?? 100;
       const cumReturn = parseFloat((lastIndex - 100).toFixed(2));
-      const annualVol = parseFloat(
-        computeAnnualizedVolatility(indexValues, config.periodsPerYear).toFixed(2)
-      );
 
-      // Weighted TER from structuralMetrics (already computed)
-      const metrics    = structuralMetrics[idx];
+      // Volatility is computed on the selection's OWN date grid (not the shared
+      // union axis) so flat forward-filled days from other series don't deflate it.
+      let annualVol = 0;
+      const inp = inputs[idx];
+      if (inp && isFinite(endMs)) {
+        const set = new Set();
+        inp.holdings.forEach(h => {
+          for (let i = 0; i < h.dates.length; i++) {
+            const t = h.dates[i];
+            if (t >= startMs && t <= endMs) set.add(t);
+          }
+        });
+        const nativeAxis = Array.from(set).sort((a, b) => a - b);
+        if (nativeAxis.length >= 3) {
+          const nativeIdx = computeNetIndex(inp, nativeAxis, startMs, totalDrag).filter(Boolean).map(d => d.index);
+          annualVol = parseFloat(computeAnnualizedVolatility(nativeIdx, config.periodsPerYear).toFixed(2));
+        }
+      }
+
+      const metrics     = structuralMetrics[idx];
       const weightedTer = metrics ? parseFloat(metrics.ter.toFixed(3)) : 0;
 
       return {
@@ -669,11 +690,11 @@ export function usePerformanceMetrics({ presets = {}, historicalData = {}, price
         cumReturn,
         annualVol,
         weightedTer,
-        hasData:      indexValues.length > 1,
+        hasData:      chartVals.length > 1,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [chartData, selections, structuralMetrics, timeframe]);
+  }, [chartData, selections, structuralMetrics, timeframe, resolveSeriesInputs, totalDrag, TIMEFRAMES]);
 
   // ══════════════════════════════════════════════════════════════════════════
   // DRAG-TO-CROSS-SLICE INTERACTION
