@@ -24,10 +24,12 @@ const TaxCalculatorView         = lazy(() => import('./components/TaxCalculatorV
 const IHTCalculatorView         = lazy(() => import('./components/IHTCalculatorView'));
 const CashCalView               = lazy(() => import('./components/CashCalView'));
 const FactFindView              = lazy(() => import('./components/FactFindView'));
+const DocumentFormView          = lazy(() => import('./components/DocumentFormView'));
 import { TabButton }            from './components/TabButton';
-import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase, DollarSign, ChevronRight } from './components/Icons';
- 
+import { GSB, RefreshCw, TrendingUp, PieChart, PoundSign, Check, AlertCircle, Briefcase, DollarSign, ChevronRight, FileText } from './components/Icons';
+
 import { CURRENCY_SYMBOLS } from './constants';
+import { DOCUMENT_SCHEMAS, DOCUMENT_TABS, DOCUMENT_TAB_IDS } from './documents';
  
 import { fetchPortfolioData } from './api';
  
@@ -87,22 +89,25 @@ export default function App() {
     const [lastAnalyticsTab, setLastAnalyticsTab] = useState('analytics');
     const [lastCalcTab,      setLastCalcTab]      = useState('tax');
     const [lastRebalTab,     setLastRebalTab]     = useState('rebalancer');
+    const [lastDocTab,       setLastDocTab]       = useState(DOCUMENT_TAB_IDS[0]);
 
     const REBAL_TABS     = ['rebalancer', 'pbrebalancer'];
     const ANALYTICS_TABS = ['analytics', 'portfolios', 'market'];
     const CALC_TABS      = ['tax', 'IHT', 'cashcal'];
     const activeGroup =
-        ANALYTICS_TABS.includes(activeTab) ? 'analytics'
-        : CALC_TABS.includes(activeTab)    ? 'calculators'
-        : activeTab === 'factfind'         ? 'factfind'
+        ANALYTICS_TABS.includes(activeTab)     ? 'analytics'
+        : CALC_TABS.includes(activeTab)        ? 'calculators'
+        : DOCUMENT_TAB_IDS.includes(activeTab) ? 'documents'
+        : activeTab === 'factfind'             ? 'factfind'
         : 'rebalancer';
 
     const goTo = (tab) => {
         setActiveTab(tab);
         setVisited((v) => (v[tab] ? v : { ...v, [tab]: true }));
-        if (REBAL_TABS.includes(tab))     setLastRebalTab(tab);
-        if (ANALYTICS_TABS.includes(tab)) setLastAnalyticsTab(tab);
-        if (CALC_TABS.includes(tab))      setLastCalcTab(tab);
+        if (REBAL_TABS.includes(tab))         setLastRebalTab(tab);
+        if (ANALYTICS_TABS.includes(tab))     setLastAnalyticsTab(tab);
+        if (CALC_TABS.includes(tab))          setLastCalcTab(tab);
+        if (DOCUMENT_TAB_IDS.includes(tab))   setLastDocTab(tab);
     };
 
     // Fact Find → seed the tools and jump to Cash Planner so it's visibly populated.
@@ -127,6 +132,7 @@ export default function App() {
             { id: 'IHT',     label: 'IHT',     icon: <PoundSign size={14} /> },
             { id: 'cashcal', label: 'Cash Planner', icon: <DollarSign size={14} /> },
         ],
+        documents: DOCUMENT_TABS.map((t) => ({ ...t, icon: <FileText size={14} /> })),
     };
  
     // ── Data fetch ───────────────────────────────────────────────────────────
@@ -217,6 +223,12 @@ export default function App() {
                                     icon={null}
                                     label="Fact Find"
                                 />
+                                <TabButton
+                                    active={activeGroup === 'documents'}
+                                    onClick={() => goTo(lastDocTab)}
+                                    icon={<FileText size={16} />}
+                                    label="Documents"
+                                />
                             </div>
                         </div>
  
@@ -268,7 +280,7 @@ export default function App() {
             </nav>
 
             {/* ── Sub-tab bar (Analytics / Calculators groups) ───────────── */}
-            {(activeGroup === 'rebalancer' || activeGroup === 'analytics' || activeGroup === 'calculators') && (
+            {(activeGroup === 'rebalancer' || activeGroup === 'analytics' || activeGroup === 'calculators' || activeGroup === 'documents') && (
                 <div className="bg-white border-b border-gray-200 sticky top-16 z-30 shadow-sm">
                     <div className="max-w-7xl mx-auto px-4 flex items-stretch gap-1 h-12">
                         {SUBTABS[activeGroup].map((st) => (
@@ -407,6 +419,18 @@ export default function App() {
                         </Suspense>
                     )}
                 </div>
+
+                {/* Completable documents — each writes into its own source PDF and
+                    auto-saves to localStorage (the one persistence exception). */}
+                {DOCUMENT_TABS.map((tab) => (
+                    <div key={tab.id} className={activeTab === tab.id ? '' : 'hidden'}>
+                        {visited[tab.id] && (
+                            <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                                <DocumentFormView schema={DOCUMENT_SCHEMAS[tab.id]} />
+                            </Suspense>
+                        )}
+                    </div>
+                ))}
             </main>
         </div>
     );

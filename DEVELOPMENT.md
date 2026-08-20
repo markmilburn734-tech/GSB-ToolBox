@@ -8,7 +8,7 @@ needs before changing anything. Read it fully first.
 
 ## 1. Stack & environment
 
-- **React 18 + Vite**, Tailwind CSS, Recharts, PapaParse, lucide-react. No TypeScript.
+- **React 18 + Vite**, Tailwind CSS, Recharts, PapaParse, lucide-react, **pdf-lib** (fills the completable documents, §10). No TypeScript.
 - **Hosting:** Firebase App Hosting (`apphosting.yaml` runs `npm run start` → serves `dist`). The build happens in CI, not locally.
 - **Folder name is "DO NOT EDIT"** — this is the owner's personal "toys" naming, NOT a real restriction. Edit freely.
 - ⚠️ **No Node/npm on the dev machine.** You cannot run `npm run build`/`dev` here. **Verify logic with Python + curl instead** — the data tabs are public CSVs, so you can replicate any calculation against the live data in Python. After changes, ask the user to run `npm run dev` for the visual check.
@@ -70,6 +70,9 @@ Two-level grouped nav. Primary tabs → sub-tabs; each group remembers its last 
 - **Analytics**: Analytics (`analytics`) · Portfolios (`portfolios`) · Pulse (`market`)
 - **Calculators**: CGT (`tax`) · IHT (`IHT`) · Cash Planner (`cashcal`, tab label "Cash Planner")
 - **Fact Find** (`factfind`): standalone primary tab, no sub-tabs. Feeds Cash Planner + IHT via the `factSeed` token (see FactFindView in §5).
+- **Documents**: Fact Find (KYC) (`docfactfind`) · ATRQ (`docatrq`) · K&E (`docke`) · Oxford Risk (`docoxford`) — the completable PDFs, see §10. Sub-tab ids and labels come from `DOCUMENT_TABS` in `src/documents/index.js`, so adding a document does not mean editing App.jsx.
+
+⚠️ **Two things are called "Fact Find" and they are different.** The primary **Fact Find** tab is the lightweight in-house form that seeds Cash Planner + IHT. **Documents → Fact Find (KYC)** is the 17-page CashCalc document. They are unrelated: separate state, separate storage, no data flows between them (a candidate for a future bridge — see §10).
 
 - **All views stay mounted once visited** (each in a `hidden` div when inactive), so every tab's inputs persist across tab switches — **in-memory only; a full refresh clears everything** (no localStorage, by request). Driven by a `visited` map in `App.jsx`.
 - **Code-split:** each view is `React.lazy(() => import(...))` inside its own per-view `<Suspense>`, so only the visited tab's chunk downloads (initial load = Rebalancer only). Per-view Suspense (not one global) prevents a first-visit load from unmounting already-mounted tabs.
@@ -139,6 +142,9 @@ Client **fact-find form** on its own primary tab. Sections: client · planning a
 - **Load into Cash Planner & IHT** → App bumps a `factSeed` token and stores `factFind`; each target view has a `useEffect([factSeed])` that maps the data in via `factToCashCal` / `factToIHT` (pure mappers in `factfind.js`) and jumps to Cash Planner. Seeding only fires when `factSeed > 0`, so it never clobbers a tool's defaults on first mount, and re-applying overwrites. Assets feed both tools (value+growth → Cash Planner; value+IHT-status → IHT estate); Cash Planner's single cover slot aggregates all policies.
 - Currency: the form uses the active symbol, but IHT is GBP-locked — treat fact-find money as GBP (UK estate/cashflow context).
 
+### DocumentFormView.jsx (+ `src/documents/`)
+Generic renderer for the four completable compliance PDFs — **see §10**, which covers the schemas, the field-mapping traps, what is and isn't scored, and how to regenerate/verify without Node.
+
 ### CashCalView.jsx
 Multi-asset cash-flow / longevity planner: editable assets (category quick-add), assumptions (age/inflation/spending), **drag-and-drop Events timeline** (Retirement, State Pension, Inheritance, Lump Expense, Forecast End — HTML5 DnD, desktop only), stacked-bar projection with drawdown. **Estate & IHT card**: `estimateIHT` on the projected estate + **life cover** (term policies lapse if the term ends before the forecast age; in-trust offsets, non-trust adds to estate).
 
@@ -181,8 +187,53 @@ Possible future refinements (not built): precise charity component/grossing-up, 
 - **Presets are sheet-only** (owner's choice) — no fallback to `INITIAL_PRESETS`; empty pickers if the tab fails.
 - **Charges** have a hardcoded `PB_CHARGES` fallback (money calc, so a safety net is kept).
 - **Simplifications flagged in-UI:** CashCal is deterministic (single avg return, no sequence risk/tax); IHT charity 10% baseline is simplified; trustee fee in Analytics is portfolio-wide, not pension-only.
-- **In-session persistence only** — no localStorage.
+- **In-session persistence only** — no localStorage — **except the four Documents tabs** (§10), which auto-save to `gsb_doc_<id>`. A 699-field fact find cannot survive on in-memory state alone. Nothing else was changed: the calculators and rebalancers still clear on refresh.
 - Date/`crypto.randomUUID()` are fine in browser event handlers; only Workflow *scripts* forbid `Date.now()`.
 
 ## 9. Memory
-Project memory lives in `memory/` (loaded each session via `MEMORY.md`): `local-build-env`, `sheet-driven-presets`, `sheet-data-quirks`, `do-not-edit-folder`. Keep them in sync with this doc.
+Project memory lives in `memory/` (loaded each session via `MEMORY.md`): `local-build-env`, `sheet-driven-presets`, `sheet-data-quirks`, `do-not-edit-folder`, `completable-documents`. Keep them in sync with this doc.
+
+---
+
+## 10. Completable documents (the Documents tab)
+
+Four real compliance PDFs the adviser fills **in the app** and downloads as the original branded document — not a re-typeset lookalike. The source files live in `public/forms/` and are shipped with the build.
+
+| Sub-tab | Document | Source PDF | Fields |
+|---|---|---|---|
+| `docfactfind` | CashCalc Fact Find (17 pp) | `cashcalc-fact-find.pdf` | 699 |
+| `docatrq` | GSB ATRQ v4 (5 pp) | `gsb-atrq.pdf` | 41 + 1 signature |
+| `docke` | Knowledge & Experience (1 p) | `knowledge-experience.pdf` | 26 |
+| `docoxford` | Oxford Risk Tolerance (2 pp) | `oxford-risk.pdf` | 26 + 1 signature |
+
+### Architecture — one renderer, four schemas
+- `src/documents/*Schema.js` — a **schema** describes what the adviser sees (sections → fields) and which AcroForm field each answer writes to (`pdf`). Nothing else knows about a specific document.
+- `src/components/DocumentFormView.jsx` — the only UI. Handles text/textarea/date/radio/checkbox/**checkgroup**/**computed** fields and fixed-row **tables**, plus autosave, JSON import/export and the download.
+- `src/documents/pdfFill.js` — loads the source PDF, sets the field values, returns bytes. Output is **not flattened**, so the adviser can still tweak a field in Acrobat before signing.
+- `src/documents/docStore.js` — localStorage autosave + JSON export/import.
+- `src/documents/index.js` — the registry. **Adding a fifth document = PDF in `public/forms` + a schema + one line here.**
+
+### Things that will bite you
+- **Field names are not in reading order.** The K&E tick boxes run `Check Box1, 5, 4, 6, 7, 8, 9, 10…`; the fact find uses hierarchical names like `Text36.0.1.3`. Every mapping was derived from the widget **rectangles** (y position on the page), never from the names. Do not "tidy" them into numeric order — you would silently tick the wrong boxes on a compliance document.
+- **The ATRQ's `Question 14` field is not question 14.** It is the investment-term control under Q13. The page's Q14/15/16 are the page-5 tick-lists, whose fields are named after their labels.
+- **Mixed option counts**: ATRQ radio groups are 5-option except `Question 10` and `Question 14`, which are 3. `verify_documents.py` checks this.
+- **Signature fields (`/Sig`) cannot be filled** — both the ATRQ and Oxford documents download unsigned by design.
+- **Text is sanitised to WinAnsi before writing** (`toPdfSafeText`). A curly quote pasted from Word would otherwise throw during save and lose the whole document.
+- **Fact find tables have fixed rows** (10 incomes, 7 loan repayments, …) because the printed grids do. More holdings than that needs a continuation sheet.
+- A **typo in the source ATRQ**: the 4th option of Q15 reads "Very cautious and risk averse" where it should read "Absolute Return or Hedge Funds". The schema reproduces the printed label and flags it in the UI. Fix belongs in the master PDF.
+
+### Scoring — deliberately minimal
+- **K&E is scored** (0–21, bands 0 / 1-8 / 9-16 / 17-21) because the document prints its own key and carries a field for the result. The score counts the seven investment types under each question; the three "none of the above" options do not score.
+- **The ATRQ and Oxford questionnaires are NOT scored.** Their validated keys are not published in the documents and half the statements are reverse-worded — a guessed key would produce an authoritative-looking risk category that is not the real one. The adviser applies the official scoring; for Oxford they pick the resulting 1–5 category and the ToolBox writes it into the box on page 2.
+
+### Regenerating & verifying (no Node needed)
+```
+python scripts/gen_factfind.py      # rebuilds src/documents/factFindSchema.js from the PDF
+python scripts/verify_documents.py  # audits all four schemas against the real PDFs
+```
+`factFindSchema.js` is **generated — do not hand-edit.** The generator reads the field names straight out of the AcroForm, so the mapping cannot drift from the document; re-run it if a source PDF is ever replaced.
+
+`verify_documents.py` is the standing check given the app cannot be built locally. It asserts that every referenced field name exists, that **every fillable field is reachable from the UI** (coverage, not just correctness), and that radio option counts match the widgets — then test-fills all four and writes them to `scripts/_verify_out/` (git-ignored) for eyeballing. Current state: **792/792 fillable fields mapped, all four fill cleanly.**
+
+### Privacy
+Client data stays in the browser: no backend, no upload, no telemetry. Every document has a **Clear** button (with a confirm) so an adviser can wipe a shared machine, and JSON export exists for filing a part-finished document.

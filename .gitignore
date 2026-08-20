@@ -1,0 +1,10 @@
+# Build + dependency output (the build runs in Firebase App Hosting CI, not here)
+node_modules/
+dist/
+
+# Test-filled PDFs written by scripts/verify_documents.py
+scripts/_verify_out/
+
+# Python bytecode from the scripts/ helpers
+__pycache__/
+*.pyc

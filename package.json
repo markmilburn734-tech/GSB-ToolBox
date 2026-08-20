@@ -8,6 +8,7 @@
     "react-dom": "^18.2.0",
     "recharts": "^2.12.7",
     "papaparse": "^5.4.1",
+    "pdf-lib": "^1.17.1",
     "prop-types": "^15.8.1",
     "serve": "^14.2.0",
     "lucide-react": "^0.294.0"
