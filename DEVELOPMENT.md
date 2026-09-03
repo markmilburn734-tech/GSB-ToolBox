@@ -128,10 +128,9 @@ Read-only model browser: pick Strategy/Currency/Profile → holdings, live price
 ### MarketPulseView.jsx
 Asset explorer: search/filter (class/region)/sort; detail panel with TER, vol, class, region, 52-wk pulse, and **multi-timeframe returns** (3M/6M/YTD/1Y) computed from history.
 
-### TaxCalculatorView.jsx (CGT)
-UK CGT estimator, GBP-locked. 2024/25 rates (18/24%), £3k allowance, joint doubling, market buffer.
+### TaxCalculatorView.jsx (CGT sell-down planner)
+Upload a portfolio, set a target, get the cheapest set of disposals. **See §11** for the solver, the import format and the verification. Rates/bands come from the `CGT` export in `constants.js` (no longer a local copy).
 - **Unused basic-rate band = `max(0, basicRateLimit − GROSS income)`** (limit £50,270 is a gross threshold). Earlier it subtracted *taxable* income, double-counting the personal allowance and over-granting the 18% band (a £60k earner wrongly blended to ~22.3% instead of the correct 24%). Verified in Python.
-- ⚠️ Rates/bands are a local `TAX_CONSTANTS` in the component, **not** in `constants.js` — annual updates need editing here (candidate to centralise).
 
 ### IHTCalculatorView.jsx
 See §7.
@@ -237,3 +236,44 @@ python scripts/verify_documents.py  # audits all four schemas against the real P
 
 ### Privacy
 Client data stays in the browser: no backend, no upload, no telemetry. Every document has a **Clear** button (with a confirm) so an adviser can wipe a shared machine, and JSON export exists for filing a part-finished document.
+
+---
+
+## 11. The CGT sell-down solver (`src/cgt/`)
+
+The CGT tab is no longer a calculator. You upload a portfolio, name a target, and it works out **which holdings to sell and how much of each** for the smallest combined bill.
+
+### The problem
+Minimise `CGT + FX conversion cost`, subject to hitting the target, with **trade count** as a competing objective. Three things make it non-trivial:
+1. **Net-cash targets are circular** — selling to raise £X realises gains, which create tax, which means selling more. Solved by bisection on gross proceeds.
+2. **The tax rate is a step function** — free to the annual exempt amount, then 18% while basic-rate headroom lasts, then 24%. So a disposal's marginal cost depends on every other disposal in the plan.
+3. **Fewest trades and least tax pull apart** — the cheapest plan is often a scatter of partial sales. Both are solved and the tidier one is offered with its price attached.
+
+### How it solves
+For a fixed proceeds target this is a **fractional knapsack**: fill from the cheapest source first, where cost per £ of proceeds is `gainFraction × marginalRate + fxSpread`. Two wrinkles, both load-bearing:
+
+- **The marginal rate isn't known until the plan exists.** Rather than guessing, `candidateRates()` computes every rate at which two holdings *swap places* in the ordering (`r* = Δspread / −ΔgainFraction`), takes midpoints between consecutive crossings, and tries them all — enumerating every ordering the cost key can produce. Thinned to `RATE_CAP` (48); proven lossless in the tests.
+- **A prune pass (`prunePlan`).** The greedy always prefers a bigger loss, but once the plan's gain is already inside the exempt amount, further losses are worth *nothing* — so a small loss-maker carrying an FX charge gets bought in for no benefit. No ordering can express "skip that one" (it outranks its alternatives at every rate), so candidates are dropped one at a time and any drop that pays is kept. **Without this the solver was beaten by brute force on 3 of 60 portfolios; with it, none.**
+
+Performance: two-phase — cheap greedy across all orderings, expensive prune only on the best `POLISH_TOP` (5). The net-cash bisection runs unpolished and polishes once at the answer (pruning only lowers cost, so net cash can only rise and the target still clears). A 38-holding portfolio solves in ~40ms *in Python*.
+
+### Modes
+`net` (client receives £X after tax and FX) · `gross` (sell £X of value) · `allowance` (realise as much as possible with no tax — maximise proceeds subject to gain ≤ exempt amount, which is the same knapsack read the other way: lowest gain per £ first, so loss-makers come first and *create* headroom).
+
+### Import format (`portfolioImport.js`)
+`Name | Currency | Price | Qty | Avg Price` (+ optional ISIN, Ticker). Headers match case-insensitively against alias lists, then by partial match, so "Quantity" / "Average Cost" / "Market Price (GBP)" all import. `.csv` via PapaParse; `.xlsx` via SheetJS, **lazily imported** so its ~800KB only downloads when a workbook is actually uploaded. Bad rows are never silently dropped — they come back in `issues` with row numbers. A **Template** button downloads the exact format.
+
+⚠️ **`Avg Price` is read as GBP by default** (the owner's choice). A UK capital gain includes the currency move between purchase and sale, so only a purchase-date GBP cost captures it. The "avg cost is in the holding's currency" toggle converts at *today's* rate instead, which is FX-blind — the UI says so out loud when any holding is non-GBP.
+
+### Modelled / not modelled
+Modelled: Section 104 pooling (one row per holding = the pool, which is why an average cost is the right input), in-year losses netting off gains, brought-forward losses (used only above the exempt amount), the exempt amount, the 18/24% split, spouse doubling, per-row **Hold** (never sell) and **Sell** (always sell in full) overrides, whole-unit rounding with top-up.
+**Not modelled: same-day and 30-day "bed and breakfast" matching** — flagged in the UI; a re-purchase within 30 days invalidates the numbers.
+
+### Verifying (no Node needed)
+```
+python scripts/verify_cgt.py            # the proof
+python scripts/make_sample_portfolio.py # regenerates scripts/sample-portfolio.csv from the live feed
+```
+`verify_cgt.py` re-implements the engine in Python and attacks it five ways: hand-worked tax cases; **optimality vs brute force** (for a fixed target the optimum is always a greedy fill along *some* ordering, so it enumerates all 720 permutations of a 6-holding portfolio and compares — currently an exact match, worst gap £0.0000); the rate cap proven lossless against exhaustive enumeration; targets actually met (including after whole-unit rounding); and invariants (monotonicity, allowance mode never creates a bill, locks honoured, a loss-maker never increases the bill).
+
+**Keep the Python port in step with the JS** — it is the only test this project has.

@@ -1326,8 +1326,11 @@ export const IHT = Object.freeze({
     TAPER_THRESHOLD: 2000000,  // RNRB tapers £1 for every £2 over this
 });
 
-// ─── UK Capital Gains Tax (2024/25) ──────────────────────────────────────────
-// Centralised so annual rate/band updates are a one-line change here.
+// ─── UK Capital Gains Tax ────────────────────────────────────────────────────
+// Rates/bands as they stood for 2024/25 (18%/24% post-30-Oct-2024, £3,000 annual
+// exempt amount). Centralised so an annual update is a one-line change here —
+// ⚠️ CHECK THESE AGAINST HMRC EACH APRIL; nothing in the app validates them, and
+// both the CGT sell-down planner (§11) and the Cash Planner read them.
 export const CGT = Object.freeze({
     LR_TAX: 0.18,          // CGT rate within the basic-rate band
     HR_TAX: 0.24,          // CGT rate above the basic-rate band

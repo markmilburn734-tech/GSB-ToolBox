@@ -391,7 +391,10 @@ export default function App() {
                 <div className={activeTab === 'tax' ? '' : 'hidden'}>
                     {visited.tax && (
                         <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
-                            <TaxCalculatorView symbol="£" currency="GBP" pricesData={gbpMarketData} />
+                            {/* CGT stays GBP-locked, but the sell-down solver prices
+                                multi-currency holdings, so it needs the full feed
+                                and live FX — not just the GBP slice. */}
+                            <TaxCalculatorView pricesData={pricesData} liveRates={liveRates} />
                         </Suspense>
                     )}
                 </div>
