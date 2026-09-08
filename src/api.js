@@ -111,6 +111,9 @@ function processStocks(rows) {
             volatility: sanitise(col(row, 'Volatility Index', 'volatility'))   || 'Average',
             assetClass: sanitise(col(row, 'Class', 'class', 'Asset Class'))     || 'Other',
             region:     sanitise(col(row, 'Region', 'Region ', 'region'))       || 'Global',
+            // Sector has been on the Stocks tab for a while but went unread until
+            // Market Pulse needed something to group sector performance by.
+            sector:     sanitise(col(row, 'Sector', 'sector', 'Industry'))       || 'Unclassified',
             high_52:    parseFloat(String(col(row, '52W High', '52w high', 'High_52') ?? '0')) || 0,
             low_52:     parseFloat(String(col(row, '52W Low',  '52w low',  'Low_52')  ?? '0')) || 0,
             pct_off_high: parseFloat(String(col(row, '% Off High', '% off high') ?? '0')) || 0,

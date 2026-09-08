@@ -158,16 +158,11 @@ export default function App() {
  
     /**
      * Currency-keyed price map: { [currency]: { [ticker]: AssetPrice } }.
-     * Consumed by MarketPulseView, TaxCalculatorView and IHTCalculatorView,
-     * all of which look up `data[currency]`.
+     * Only IHTCalculatorView still wants this shape — Market Pulse filters by
+     * currency itself, and the CGT planner takes the whole multi-currency feed.
      */
- 
-    const marketPulseData = useMemo(
-        () => selectMarketData(pricesData, activeCurrency),
-        [pricesData, activeCurrency],
-    );
 
-    // CGT & IHT are UK statutory tools — always GBP, independent of the toggle.
+    // IHT is a UK statutory tool — always GBP, independent of the toggle.
     const gbpMarketData = useMemo(
         () => selectMarketData(pricesData, 'GBP'),
         [pricesData],
@@ -349,11 +344,12 @@ export default function App() {
                 <div className={activeTab === 'market' ? '' : 'hidden'}>
                     {visited.market && (
                         <Suspense fallback={<div className="text-center py-24 text-sm text-gray-400">Loading…</div>}>
+                            {/* Market Pulse owns its own currency filter (it defaults
+                                to "all"), so it takes the whole feed rather than the
+                                globally-selected currency slice. */}
                             <MarketPulseView
-                                data={marketPulseData}
+                                data={pricesData}
                                 historicalData={historicalData}
-                                symbol={symbol}
-                                currency={activeCurrency}
                             />
                         </Suspense>
                     )}

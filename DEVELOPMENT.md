@@ -25,7 +25,7 @@ One published workbook, base URL in `src/constants.js` → `GOOGLE_SHEETS_CSV_UR
 
 | gid | Tab | Shape | Parsed by (`api.js`) |
 |---|---|---|---|
-| 0 | **Stocks** | Name,Currency,ISIN,Ticker,Price,Date,52W H/L,% Off High,Region,Class,TER/OCR,Volatility | `processStocks` → `pricesData` (keyed by ticker) |
+| 0 | **Stocks** | Name,Currency,ISIN,Ticker,Price,Date,52W H/L,% Off High,Region,Class,TER/OCR,Volatility,**Sector** | `processStocks` → `pricesData` (keyed by ticker) |
 | 689728688 | **Daily_1Y** | Ticker,Date,Price (dates `M/D/YYYY`) | `processHistory` |
 | 755116259 | **"Monthly_5Y"** | Ticker,Date,Price — **actually WEEKLY** (~260 pts/5y) | `processHistory` |
 | 161616036 | **Currencies** | Base Currency,Target Currency,Exchange Rate | `processCurrencies` → `liveRates` |
@@ -43,6 +43,7 @@ One published workbook, base URL in `src/constants.js` → `GOOGLE_SHEETS_CSV_UR
 - Some Yahoo tickers have a **denomination glitch** (e.g. SMEA.L jumps ×100 in Nov-2023) → `stitchDiscontinuities` repairs it.
 - Portfolios cash rows use **synthetic `Cash`** (ISIN/Ticker = "Cash"); real money-market funds keep their tickers.
 - A few Portfolios ticker typos exist (`0P000TH0M.F` etc.) — data issue, not code.
+- **`Sector` is "Mixed" for ~131 of 184 rows** — funds and ETFs have no single sector. Market Pulse's sector board excludes them; don't treat Sector as populated for fund rows.
 
 ### Backend Apps Script (`apps-script/history-updater.gs`)
 The script that **populates** the Sheet lives inside the Sheet's Apps Script editor; `apps-script/history-updater.gs` is the **version-controlled reference copy** — keep them in sync. It fetches from Yahoo (`adjclose` = total return) and writes the Stocks/history tabs. Jobs:
@@ -126,7 +127,16 @@ See §6 — the analytics engine, the most-iterated part.
 Read-only model browser: pick Strategy/Currency/Profile → holdings, live prices (converted), blended TER, allocation-by-class and by-region bars. Cash valued at par.
 
 ### MarketPulseView.jsx
-Asset explorer: search/filter (class/region)/sort; detail panel with TER, vol, class, region, 52-wk pulse, and **multi-timeframe returns** (3M/6M/YTD/1Y) computed from history.
+Market overview **plus** asset explorer. One timeframe selector (3M/6M/YTD/1Y) drives three boards, then the searchable list and detail panel below.
+- **Movers ticker** — a CSS marquee of the top 10 winners and 10 losers, pausing on hover and disabled under `prefers-reduced-motion` (keyframes live in `src/index.css`). Clicking a chip selects that asset. The track holds the list twice and translates −50% so it loops seamlessly.
+- **Sector board** — equal-weighted mean return by `Sector`. ⚠️ **131 of 184 assets are tagged "Mixed"** because they are funds/ETFs with no single sector; those are EXCLUDED (`NON_SECTORS`) or the board would be one giant meaningless bucket. Leaves ~53 single-company holdings over ~9 sectors, which is a real board. The count of excluded funds is shown.
+- **Country/region board** — same treatment over `region`, all assets. Rows show `n`, amber when `n < 3`: several regions hold one or two assets (South Korea is two share classes of the *same* iShares fund), so a mean there is a data point, not a trend. Hover gives median / best / worst.
+- **Currency is a FILTER here**, defaulting to "All currencies" — the view takes the whole `pricesData` feed, not the globally-selected slice. The top-right global selector still drives the investment tabs; it just no longer gates this one.
+- ⚠️ **Returns are in each asset's own currency.** The history feed is native-currency and only *today's* FX is held, so there is no historical rate to convert a past return with. Mixing currencies on one board is approximate and the UI says so. The same fund also appears as several listings/share classes (BRNT.MI / BRND.L / BRNG.L are one Brent tracker); filtering to a currency collapses most duplicates.
+- Perf is computed **once for the whole roster** in a memo: each series is stitched once (`stitchDiscontinuities`, or a re-denominated ticker reports +14,000%), then all four timeframes are read off it.
+- Needs `sector` from the Stocks tab — added to `processStocks` in `api.js`; it had been present in the sheet but unread.
+
+Verify with `python scripts/verify_market_pulse.py [3m|6m|ytd|1y]`, which reproduces all three boards against the live feed using the same rules.
 
 ### TaxCalculatorView.jsx (CGT sell-down planner)
 Upload a portfolio, set a target, get the cheapest set of disposals. **See §11** for the solver, the import format and the verification. Rates/bands come from the `CGT` export in `constants.js` (no longer a local copy).
