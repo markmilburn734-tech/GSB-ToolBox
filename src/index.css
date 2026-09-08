@@ -3,26 +3,36 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Market Pulse movers ticker ──────────────────────────────────────────────
-   A continuously scrolling strip. The track holds the same list twice, so
-   translating it by exactly -50% loops seamlessly. Pauses on hover so a figure
-   can actually be read, and stops entirely for anyone who has asked their OS
-   to reduce motion. */
-@keyframes gsb-marquee {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
+/* The movers ticker used to scroll via a CSS @keyframes animation here. It is
+   now driven by requestAnimationFrame in MarketPulseView (see `useMarquee`),
+   because a CSS animation silently does nothing under
+   `prefers-reduced-motion: reduce` — which is exactly how it failed in
+   testing, with no error to point at. The JS version is self-contained and
+   observable. Don't reintroduce the keyframes. */
+
+/* `custom-scrollbar` has been used on scroll panes since before the Market
+   Pulse rebuild but was never actually defined — it was a no-op class. Now
+   that the asset list and the sector/region rail both scroll, give it a slim
+   brand-tinted bar instead of the chunky default. */
+.custom-scrollbar {
+  scrollbar-width: thin;                        /* Firefox */
+  scrollbar-color: #d8cfdc transparent;
 }
 
-.gsb-marquee-track {
-  display: flex;
-  width: max-content;
-  animation: gsb-marquee var(--gsb-marquee-duration, 60s) linear infinite;
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.gsb-marquee:hover .gsb-marquee-track {
-  animation-play-state: paused;
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gsb-marquee-track { animation: none; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #d8cfdc;
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #816a88;                    /* brand6 */
 }

@@ -128,7 +128,11 @@ Read-only model browser: pick Strategy/Currency/Profile → holdings, live price
 
 ### MarketPulseView.jsx
 Market overview **plus** asset explorer. One timeframe selector (3M/6M/YTD/1Y) drives three boards, then the searchable list and detail panel below.
-- **Movers ticker** — a CSS marquee of the top 10 winners and 10 losers, pausing on hover and disabled under `prefers-reduced-motion` (keyframes live in `src/index.css`). Clicking a chip selects that asset. The track holds the list twice and translates −50% so it loops seamlessly.
+**Layout:** full-bleed movers ticker flush under the nav → title + timeframe → filters → a 12-column grid of **asset list (3) · detail (6) · sector + region rail (3)**. The boards sit in the rail on purpose: they are context, and stacking them full-width above the list pushed the stocks below the fold.
+
+- **Movers ticker** — top 12 winners + 12 losers, full-bleed (a `-mt-6` cancels `<main>`'s top padding so it sits flush). Clicking a chip selects that asset.
+  - ⚠️ **Driven by `requestAnimationFrame` (`useMarquee`), NOT a CSS animation.** The first version used `@keyframes` in `index.css` and did not move: a CSS animation is silently cancelled by `prefers-reduced-motion: reduce`, which is set on plenty of Windows machines, and it fails with nothing to debug. **Don't reintroduce the keyframes.**
+  - The track renders the list twice and wraps the offset at half its own `scrollWidth`, so the seam never shows. It only scrolls when one copy is wider than the viewport — a narrow filter (CHF has three assets) would otherwise scroll a short list into open space.
 - **Sector board** — equal-weighted mean return by `Sector`. ⚠️ **131 of 184 assets are tagged "Mixed"** because they are funds/ETFs with no single sector; those are EXCLUDED (`NON_SECTORS`) or the board would be one giant meaningless bucket. Leaves ~53 single-company holdings over ~9 sectors, which is a real board. The count of excluded funds is shown.
 - **Country/region board** — same treatment over `region`, all assets. Rows show `n`, amber when `n < 3`: several regions hold one or two assets (South Korea is two share classes of the *same* iShares fund), so a mean there is a data point, not a trend. Hover gives median / best / worst.
 - **Currency is a FILTER here**, defaulting to "All currencies" — the view takes the whole `pricesData` feed, not the globally-selected slice. The top-right global selector still drives the investment tabs; it just no longer gates this one.
