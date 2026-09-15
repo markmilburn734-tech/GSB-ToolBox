@@ -1274,15 +1274,23 @@ export const PB_CHARGES = Object.freeze({
 });
 
 /**
- * Best-effort default fee category for a holding, matching our Stocks `Class`
- * to one of the bank's available category names (keyword-based, so it adapts to
- * whatever the Charges sheet calls them).
- * @param {string} ourClass         e.g. 'Equity' | 'Bond' | 'Cash' | 'Multi-Asset'
+ * Default fee category for a holding. An EXACT (case-insensitive, trimmed) match
+ * between our Stocks `Class` and one of the bank's category names wins: the
+ * Stocks tab uses the Charges tab's names verbatim ("Equity Funds", "Funds",
+ * "Bond Funds", "Money Market Funds", "Equities / ETFs"), and the keyword rules
+ * below would mis-route those ("Equity Funds" contains "equit" -> ETFs; "Funds"
+ * -> first category containing "fund", i.e. "Equity Funds" by sheet row order).
+ * Keywords are only the fallback, for the synthetic 'Cash' line, the 'Equity'
+ * default on blank rows, and any category the sheet renames later.
+ * @param {string} ourClass         e.g. 'Equity Funds' | 'Bond Funds' | 'Cash'
  * @param {string[]} availableClasses category names offered by the selected bank
  */
 export function mapBankClass(ourClass, availableClasses = []) {
-    const find = (kw) => availableClasses.find((c) => c.toLowerCase().includes(kw));
-    const c = String(ourClass || '').toLowerCase();
+    const c = String(ourClass || '').trim().toLowerCase();
+    const exact = availableClasses.find((k) => String(k).trim().toLowerCase() === c);
+    if (exact) return exact;
+
+    const find = (kw) => availableClasses.find((k) => k.toLowerCase().includes(kw));
     if (c.includes('cash') || c.includes('money')) return find('money market') || availableClasses[0];
     if (c.includes('bond') || c.includes('fixed')) return find('bond') || availableClasses[0];
     if (c.includes('equit'))                       return find('etf') || find('equit') || availableClasses[0];

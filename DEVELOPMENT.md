@@ -58,7 +58,8 @@ The script that **populates** the Sheet lives inside the Sheet's Apps Script edi
 
 - `resolveRate(base, target, liveRates)` — live FX with **inverse fallback** (`1/rate`) then static fallback. The sheet only stores one direction; the inverse is derived. CHF is present (needed by PB charges).
 - `isCash(value)` — true when ticker/ISIN === "CASH".
-- **Private bank charges:** `PB_CHARGES` (fallback schedule), `mapBankClass(ourClass, availableClasses)` (keyword-maps our Class → the bank's fee category), `computeTransactionFee(value, ccy, bankClass, bank, liveRates, schedule)` → `{ fee, rate, minFee, appliedMin }`. Trade value → CHF (live) picks the tier; charges `max(value×rate, CHF-min×live)`.
+- **Private bank charges:** `PB_CHARGES` (fallback schedule), `mapBankClass(ourClass, availableClasses)` (default fee category: an **exact** case-insensitive/trimmed match of our Stocks `Class` against the bank's category names wins; keyword matching is only the fallback — see below), `computeTransactionFee(value, ccy, bankClass, bank, liveRates, schedule)` → `{ fee, rate, minFee, appliedMin }`. Trade value → CHF (live) picks the tier; charges `max(value×rate, CHF-min×live)`.
+  - ⚠️ **Exact match first, keywords second.** The Stocks `Class` values are now the Charges `Asset Type` names verbatim (`Equity Funds`, `Funds`, `Bond Funds`, `Money Market Funds`, `Equities / ETFs`). The old keyword-only logic mis-routed two of them at every bank: `Equity Funds` contains "equit" → `Equities / ETFs`, and `Funds` → the first category containing "fund", which is `Equity Funds` purely by sheet row order (in `PB_CHARGES` it was `Money Market Funds`). Example: Barclays, £500k Dimensional Core / GBP / Balanced (60/40): £3,962.50 under the keyword logic vs £3,218.75 correct (Equity Funds 0.75% vs ETFs 1.00% at that size). The `Funds` fix raises Barclays fees (Funds 1.80/1.50/1.20/0.80% vs Equity Funds 1.25/1.00/0.75/0.50%) and lowers LO fees (Funds 0.50% vs 0.68% at the first band). Schroders hid it because its Equity Funds, Funds and ETFs rates are identical. Don't remove the keyword fallback — it still serves the synthetic `Cash` line (→ Money Market), the `'Equity'` default on blank rows (→ `Equities / ETFs`), the hard-coded `PB_CHARGES`, and any category the sheet renames later. `classifyEB` in `PrivateBankRebalancerView.jsx` (equity/bond split) already keys off the new names.
 - **IHT:** `IHT` consts, `residenceNilRateBand(estate, joint, claim)` (£2m taper, threshold NOT doubled for couples), `estimateIHT(estate, {joint, claimRNRB})`, `giftTaperMultiplier(yearsAgo)`.
 - `CURRENCY_SYMBOLS`, `INITIAL_PRESETS` (dormant — presets are sheet-only, no fallback by owner's choice).
 
@@ -109,7 +110,7 @@ Multi-asset rebalancer in one display currency. Prices via `getLivePrice` (ISIN 
 The most feature-rich. Built on `computeTransactionFee`.
 - **Multi-currency holdings** (native + base value side by side); base currency selector.
 - **Models as expandable wrappers**: add a whole preset; it carries one overall % of the portfolio, constituents show within-model weight → effective % (`overall × weight/100`). Searchable add menu (models + individual assets).
-- **Bank selector** (from `charges` keys); per-holding fee category (auto-mapped, overridable).
+- **Bank selector** (from `charges` keys); per-holding fee category (auto-mapped by `mapBankClass`, exact name first — see §3; overridable).
 - **Charges per trade**; **cash (`Cash`) is charge-free**, real MMFs are charged.
 - **Loans** (Lombard): liability and/or drawable (adds investable capital).
 - **Rounding:** `Margin` mode — buys round DOWN, sells UP; step by price band (>£100→1, £50–100→2, <£50→5). `Exact` mode = fractional.
