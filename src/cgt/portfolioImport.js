@@ -162,8 +162,9 @@ export function rowsToHoldings(rows) {
             qty,
             price,
             avgCost,
-            locked: false,
-            forced: false,
+            // Every imported holding starts fully available to the solver; the
+            // adviser narrows it with the per-holding "max to sell" slider.
+            maxSellPct: 100,
         });
     });
 

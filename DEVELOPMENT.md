@@ -264,13 +264,28 @@ Minimise `CGT + FX conversion cost`, subject to hitting the target, with **trade
 2. **The tax rate is a step function** — free to the annual exempt amount, then 18% while basic-rate headroom lasts, then 24%. So a disposal's marginal cost depends on every other disposal in the plan.
 3. **Fewest trades and least tax pull apart** — the cheapest plan is often a scatter of partial sales. Both are solved and the tidier one is offered with its price attached.
 
-### How it solves
-For a fixed proceeds target this is a **fractional knapsack**: fill from the cheapest source first, where cost per £ of proceeds is `gainFraction × marginalRate + fxSpread`. Two wrinkles, both load-bearing:
+### How it solves — exactly
+For a fixed proceeds target P this is a small **linear programme**. With x_i the £ sold from holding i, and the realised gain split into a free slice, an 18% slice L and a 24% slice H:
 
-- **The marginal rate isn't known until the plan exists.** Rather than guessing, `candidateRates()` computes every rate at which two holdings *swap places* in the ordering (`r* = Δspread / −ΔgainFraction`), takes midpoints between consecutive crossings, and tries them all — enumerating every ordering the cost key can produce. Thinned to `RATE_CAP` (48); proven lossless in the tests.
-- **A prune pass (`prunePlan`).** The greedy always prefers a bigger loss, but once the plan's gain is already inside the exempt amount, further losses are worth *nothing* — so a small loss-maker carrying an FX charge gets bought in for no benefit. No ordering can express "skip that one" (it outranks its alternatives at every rate), so candidates are dropped one at a time and any drop that pays is kept. **Without this the solver was beaten by brute force on 3 of 60 portfolios; with it, none.**
+```
+minimise   Σ x_i·spread_i + 18%·L + 24%·H
+subject to Σ x_i = P
+           Σ x_i·gainFraction_i − L − H ≤ exempt + broughtForwardLosses
+           0 ≤ L ≤ basic-rate headroom,  H ≥ 0,  0 ≤ x_i ≤ value_i × slider_i
+```
 
-Performance: two-phase — cheap greedy across all orderings, expensive prune only on the best `POLISH_TOP` (5). The net-cash bisection runs unpolished and polishes once at the answer (pruning only lowers cost, so net cash can only rise and the target still clears). A 38-holding portfolio solves in ~40ms *in Python*.
+Only two real constraints, so an optimal vertex has at most two values strictly inside their bounds. That leaves exactly two shapes for the optimum, and `optimalFractions()` builds both:
+- **(a) a greedy fill** — cheapest-first by `spread + r·gainFraction`, each holding to its slider — at r = 0, 18% or 24%: all-or-cap sales plus **one** partial;
+- **(b) a blend of two greedy fills landing exactly on a tax kink** (edge of the exempt amount, or top of the basic-rate band): **two** partials — e.g. part of a big GBP gain balanced against part of a loss-maker so the net gain is exactly £3,000. Found by bisecting r: realised gain falls monotonically as r rises, so the jump across the kink is pinned precisely, and the fills either side are both optimal for the same Lagrangian, so their kink-landing blend is too.
+
+⚠️ **History — do not go back to enumerating orderings.** The first solver (Aug 2026) enumerated every rate at which two holdings swap order (`candidateRates`) and then pruned (`prunePlan`). That can only ever produce shape (a). It was "verified" against a permutation brute force that had the *same* blind spot, so the two agreed — and were both wrong: against a real LP it was worse than optimal on ~1 portfolio in 10, by up to £434. Replaced Sep 2026 when the per-holding sliders surfaced the gap. On the sample portfolio the difference is small but real (£600k net: £372 → £338).
+
+Cost: ~130 greedy fills per plan, cheap enough to run inside the net-cash bisection directly. A 184-holding portfolio solves in a few ms (in Python). The fewer-trades alternative comes from three tidiness-biased orderings (`TIDY_ORDERINGS`) and is only offered when it genuinely uses fewer trades, with its extra cost attached.
+
+### Per-holding sliders ("max to sell")
+Each row has a 0–100% slider (`maxSellPct`, step 5, default 100): the **most** of that position the solver may sell — a ceiling, not an instruction; the solver still sells less, or none, when that is cheaper. **0% is Hold.** It replaced the old Hold / Sell buttons. There is no "force sell" any more.
+
+Why caps don't break optimality: every £ sold from a Section 104 pool carries the same average cost, so a cap changes only *how much* a holding can supply, never its cost per £. The caps are simply the upper bounds on x_i in the LP above. Under the slider, a bar shows the allowed band (light) against what the plan actually uses (solid, amber when pressed against the cap), and the plan table flags **AT n% CAP** — the lines where raising the slider would let the solver do better. Whole-unit rounding never exceeds a slider (a 40% cap on 7 units permits 2, never 3). "all 100% / all 0%" in the column header resets every row.
 
 ### Modes
 `net` (client receives £X after tax and FX) · `gross` (sell £X of value) · `allowance` (realise as much as possible with no tax — maximise proceeds subject to gain ≤ exempt amount, which is the same knapsack read the other way: lowest gain per £ first, so loss-makers come first and *create* headroom).
@@ -281,7 +296,7 @@ Performance: two-phase — cheap greedy across all orderings, expensive prune on
 ⚠️ **`Avg Price` is read as GBP by default** (the owner's choice). A UK capital gain includes the currency move between purchase and sale, so only a purchase-date GBP cost captures it. The "avg cost is in the holding's currency" toggle converts at *today's* rate instead, which is FX-blind — the UI says so out loud when any holding is non-GBP.
 
 ### Modelled / not modelled
-Modelled: Section 104 pooling (one row per holding = the pool, which is why an average cost is the right input), in-year losses netting off gains, brought-forward losses (used only above the exempt amount), the exempt amount, the 18/24% split, spouse doubling, per-row **Hold** (never sell) and **Sell** (always sell in full) overrides, whole-unit rounding with top-up.
+Modelled: Section 104 pooling (one row per holding = the pool, which is why an average cost is the right input), in-year losses netting off gains, brought-forward losses (used only above the exempt amount), the exempt amount, the 18/24% split, spouse doubling, per-holding **max-to-sell sliders** (0% = hold), whole-unit rounding with top-up.
 **Not modelled: same-day and 30-day "bed and breakfast" matching** — flagged in the UI; a re-purchase within 30 days invalidates the numbers.
 
 ### Verifying (no Node needed)
@@ -289,6 +304,6 @@ Modelled: Section 104 pooling (one row per holding = the pool, which is why an a
 python scripts/verify_cgt.py            # the proof
 python scripts/make_sample_portfolio.py # regenerates scripts/sample-portfolio.csv from the live feed
 ```
-`verify_cgt.py` re-implements the engine in Python and attacks it five ways: hand-worked tax cases; **optimality vs brute force** (for a fixed target the optimum is always a greedy fill along *some* ordering, so it enumerates all 720 permutations of a 6-holding portfolio and compares — currently an exact match, worst gap £0.0000); the rate cap proven lossless against exhaustive enumeration; targets actually met (including after whole-unit rounding); and invariants (monotonicity, allowance mode never creates a bill, locks honoured, a loss-maker never increases the bill).
+`verify_cgt.py` re-implements the engine in Python and checks every plan against an **exact LP (`scipy.optimize.linprog`, `pip install scipy`)** — not brute force, for the reason in the history note above. It runs: hand-worked tax cases; optimality vs the LP across 1,290 random portfolios from 6 holdings up to the full 184-holding roster, with and without random sliders, joint and brought-forward-loss variations (currently exact, worst gap £0.0000, ~110 of the optima being two-partial kink blends); an explicit regression for the two-partials-on-the-exempt-kink shape; allowance mode vs its own LP; targets met, including after whole-unit rounding under sliders; and invariants (0% never sold, no slider exceeded, loosening sliders never raises cost, allowance mode never creates a bill, a loss-maker never increases the bill).
 
 **Keep the Python port in step with the JS** — it is the only test this project has.

@@ -8,4 +8,4 @@
 - [Sheet data quirks](sheet-data-quirks.md) — weekly "5Y" tab, empty dates, header drift, ticker typos
 - [Portfolio tracker location](portfolio-tracker-location.md) — standalone units→value tracker lives in `Alberto Portfolio/`, not GSB-ToolBox
 - [Completable documents](completable-documents.md) — the Documents tab: 4 compliance PDFs filled via pdf-lib, scoring decisions, field-mapping traps
-- [CGT sell-down solver](cgt-selldown-solver.md) — CGT tab is now an optimiser (tax + FX + trade count); the two tricks that must not be simplified away
+- [CGT sell-down solver](cgt-selldown-solver.md) — exact LP-backed optimiser with per-holding max-to-sell sliders; why the old solver was wrong despite "passing"

@@ -6,8 +6,14 @@
 // combined tax + FX bill — then shows what the tidier, fewer-trades plan would
 // cost instead.
 //
-// All the maths lives in src/cgt/cgtEngine.js (pure, and verified against brute
-// force by scripts/verify_cgt.py). This file is presentation + state only.
+// All the maths lives in src/cgt/cgtEngine.js (pure, and checked against an
+// exact LP by scripts/verify_cgt.py). This file is presentation + state only.
+//
+// Each holding has a "max to sell" slider (0–100%) — a ceiling the solver may
+// not exceed, replacing the old Hold / Sell buttons. 0% is Hold; there is no
+// longer a "force sell", because a forced disposal is just a plan the solver
+// would already make if it were cheapest, or a choice the adviser can take
+// outside the optimiser.
 //
 // Manual entry still works: "Add row" for a blank line, or pull a holding off
 // the live price feed and type in the units and average cost.
@@ -79,6 +85,66 @@ function Toggle({ text, checked, onChange, hint }) {
                 {hint && <span className="block text-[11px] text-gray-400">{hint}</span>}
             </span>
         </label>
+    );
+}
+
+/**
+ * Per-holding "max to sell" slider.
+ *
+ * The slider is a CEILING, not an instruction: at 60% the solver may sell up to
+ * 60% of the position, and will sell less — or none — if that's cheaper. 0% is
+ * the old "Hold". The bar underneath shows both at once: the lighter band is
+ * what the slider allows, the solid band is what the current plan actually uses,
+ * so a plan pressed right up against a slider is visible at a glance.
+ */
+function SellSlider({ holding, usedFraction, onChange }) {
+    const pct = holding.maxSellPct ?? 100;
+    const usedPct = Math.min(pct, Math.max(0, usedFraction * 100));
+    const atCap = pct > 0 && pct < 100 && usedPct >= pct - 0.05;
+
+    return (
+        <div className="min-w-[190px]">
+            <div className="flex items-center gap-2">
+                <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={pct}
+                    onChange={(e) => onChange(e.target.value)}
+                    aria-label={`Maximum of ${holding.name} to sell`}
+                    className="flex-1 accent-brand cursor-pointer"
+                />
+                <span className={`w-10 text-right text-xs font-mono font-bold ${pct === 0 ? 'text-gray-400' : 'text-brand'}`}>
+                    {pct}%
+                </span>
+            </div>
+
+            <div className="relative h-1.5 mt-1 rounded-full bg-gray-100 overflow-hidden" aria-hidden>
+                <div className="absolute inset-y-0 left-0 bg-brand6/25" style={{ width: `${pct}%` }} />
+                <div
+                    className={`absolute inset-y-0 left-0 ${atCap ? 'bg-amber-500' : 'bg-brand'}`}
+                    style={{ width: `${usedPct}%` }}
+                />
+            </div>
+
+            <div className="mt-1 text-[10px] leading-tight">
+                {pct === 0 ? (
+                    <span className="text-gray-400">Held — never sold</span>
+                ) : (
+                    <>
+                        <span className="text-gray-400">
+                            up to {units(holding.qty * holding.sellCap)} units · {gbp(holding.availableGbp)}
+                        </span>
+                        {usedPct > 0.05 && (
+                            <span className={`block font-semibold ${atCap ? 'text-amber-600' : 'text-brand'}`}>
+                                plan sells {usedPct.toFixed(usedPct < 10 ? 1 : 0)}%{atCap && ' — at the cap'}
+                            </span>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -181,16 +247,18 @@ export default function TaxCalculatorView({ pricesData = {}, liveRates = {} }) {
             : h
     )));
 
-    const toggle = (id, field) => setHoldings((prev) => prev.map((h) => (
-        h.id === id ? { ...h, [field]: !h[field] } : h
+    /** Per-holding slider: the most of the position the solver may sell (0–100%). */
+    const setMaxSell = (id, pct) => setHoldings((prev) => prev.map((h) => (
+        h.id === id ? { ...h, maxSellPct: Math.min(100, Math.max(0, Number(pct) || 0)) } : h
     )));
+    const setAllMaxSell = (pct) => setHoldings((prev) => prev.map((h) => ({ ...h, maxSellPct: pct })));
 
     const removeRow = (id) => setHoldings((prev) => prev.filter((h) => h.id !== id));
 
     const addBlank = () => {
         setHoldings((prev) => [...prev, {
             id: `man-${Date.now()}`, name: 'New holding', currency: 'GBP',
-            qty: 0, price: 0, avgCost: 0, locked: false, forced: false,
+            qty: 0, price: 0, avgCost: 0, maxSellPct: 100,
         }]);
         setAddOpen(false);
     };
@@ -199,7 +267,7 @@ export default function TaxCalculatorView({ pricesData = {}, liveRates = {} }) {
         setHoldings((prev) => [...prev, {
             id: `feed-${ticker}-${Date.now()}`,
             name: asset.name, currency: asset.currency, ticker, isin: asset.isin,
-            qty: 0, price: asset.price, avgCost: 0, locked: false, forced: false,
+            qty: 0, price: asset.price, avgCost: 0, maxSellPct: 100,
         }]);
         setAddOpen(false);
         setAddQuery('');
@@ -220,10 +288,11 @@ export default function TaxCalculatorView({ pricesData = {}, liveRates = {} }) {
     const exportPlan = () => {
         if (!plan?.trades?.length) return;
         const rows = [
-            ['Holding', 'Currency', 'Units to sell', 'Proceeds (native)', 'Proceeds (GBP)',
-             'Gain (GBP)', 'FX cost (GBP)', 'Full disposal'],
+            ['Holding', 'Currency', 'Units to sell', '% of position', 'Max allowed %', 'Proceeds (native)',
+             'Proceeds (GBP)', 'Gain (GBP)', 'FX cost (GBP)', 'Full disposal'],
             ...plan.trades.map((t) => [
-                t.name, t.currency, units(t.units), t.proceedsNative.toFixed(2),
+                t.name, t.currency, units(t.units), (t.fraction * 100).toFixed(1), t.maxSellPct,
+                t.proceedsNative.toFixed(2),
                 t.proceedsGbp.toFixed(2), t.gainGbp.toFixed(2), t.fxCostGbp.toFixed(2),
                 t.isFullDisposal ? 'Yes' : 'No',
             ]),
@@ -377,13 +446,20 @@ export default function TaxCalculatorView({ pricesData = {}, liveRates = {} }) {
                                     <th className="text-right pb-2 px-1 w-32">Avg cost{avgCostInNative ? '' : ' (£)'}</th>
                                     <th className="text-right pb-2 px-1 w-28">Value £</th>
                                     <th className="text-right pb-2 px-1 w-32">Gain £</th>
-                                    <th className="text-center pb-2 px-1 w-24">Hold / Force</th>
+                                    <th className="text-left pb-2 pl-3 pr-1 w-56">
+                                        Max to sell
+                                        <span className="ml-2 normal-case tracking-normal font-semibold">
+                                            <button onClick={() => setAllMaxSell(100)} className="text-brand6 hover:text-brand">all 100%</button>
+                                            <span className="text-gray-300 mx-1">·</span>
+                                            <button onClick={() => setAllMaxSell(0)} className="text-brand6 hover:text-brand">all 0%</button>
+                                        </span>
+                                    </th>
                                     <th className="w-8" />
                                 </tr>
                             </thead>
                             <tbody>
                                 {derived.map((h) => (
-                                    <tr key={h.id} className={`border-t border-gray-100 ${h.locked ? 'opacity-50' : ''}`}>
+                                    <tr key={h.id} className={`border-t border-gray-100 ${h.maxSellPct <= 0 ? 'opacity-50' : ''}`}>
                                         <td className="py-1 pr-2">
                                             <input
                                                 value={h.name}
@@ -414,23 +490,12 @@ export default function TaxCalculatorView({ pricesData = {}, liveRates = {} }) {
                                                 {(h.gainFraction * 100).toFixed(1)}% of value
                                             </span>
                                         </td>
-                                        <td className="px-1">
-                                            <div className="flex gap-1 justify-center">
-                                                <button
-                                                    title="Hold — never sell this line"
-                                                    onClick={() => toggle(h.id, 'locked')}
-                                                    className={`px-2 py-1 rounded-md text-[10px] font-bold border ${h.locked ? 'bg-brand text-white border-brand' : 'bg-white text-gray-400 border-gray-200 hover:border-brand'}`}
-                                                >
-                                                    Hold
-                                                </button>
-                                                <button
-                                                    title="Force — always sell this line in full"
-                                                    onClick={() => toggle(h.id, 'forced')}
-                                                    className={`px-2 py-1 rounded-md text-[10px] font-bold border ${h.forced ? 'bg-brand3 text-white border-brand3' : 'bg-white text-gray-400 border-gray-200 hover:border-brand3'}`}
-                                                >
-                                                    Sell
-                                                </button>
-                                            </div>
+                                        <td className="pl-3 pr-1 py-1">
+                                            <SellSlider
+                                                holding={h}
+                                                usedFraction={plan?.fractions?.[h.id] || 0}
+                                                onChange={(pct) => setMaxSell(h.id, pct)}
+                                            />
                                         </td>
                                         <td className="px-1 text-right">
                                             <button onClick={() => removeRow(h.id)} className="text-gray-300 hover:text-brand3">
@@ -522,8 +587,8 @@ export default function TaxCalculatorView({ pricesData = {}, liveRates = {} }) {
 
             {derived.length > 0 && !plan && (
                 <div className={`${card} p-6 text-center text-sm text-amber-700 bg-amber-50/70 border-amber-200`}>
-                    The sellable portfolio ({gbp(totals.sellableGbp)}) is smaller than the target.
-                    Release a held line or lower the target.
+                    Your sliders release {gbp(totals.sellableGbp)}, which is less than the target.
+                    Raise some sliders or lower the target.
                 </div>
             )}
 
@@ -584,6 +649,14 @@ export default function TaxCalculatorView({ pricesData = {}, liveRates = {} }) {
                                         <tr key={t.id} className="border-t border-gray-100">
                                             <td className="py-2 font-semibold text-gray-800">
                                                 {t.name}
+                                                {t.atCap && (
+                                                    <span
+                                                        title="Sold right up to its slider — raising the slider would let the solver use more of this holding"
+                                                        className="ml-2 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-bold"
+                                                    >
+                                                        AT {t.maxSellPct}% CAP
+                                                    </span>
+                                                )}
                                                 {t.isFullDisposal && (
                                                     <span className="ml-2 px-1.5 py-0.5 rounded bg-brand-tint text-brand text-[10px] font-bold">FULL</span>
                                                 )}
