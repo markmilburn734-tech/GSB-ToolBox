@@ -93,9 +93,8 @@ function Toggle({ text, checked, onChange, hint }) {
  *
  * The slider is a CEILING, not an instruction: at 60% the solver may sell up to
  * 60% of the position, and will sell less — or none — if that's cheaper. 0% is
- * the old "Hold". The bar underneath shows both at once: the lighter band is
- * what the slider allows, the solid band is what the current plan actually uses,
- * so a plan pressed right up against a slider is visible at a glance.
+ * the old "Hold". The caption underneath says what the slider allows and, once
+ * a plan exists, how much of it the plan actually uses (amber at the cap).
  */
 function SellSlider({ holding, usedFraction, onChange }) {
     const pct = holding.maxSellPct ?? 100;
@@ -120,15 +119,7 @@ function SellSlider({ holding, usedFraction, onChange }) {
                 </span>
             </div>
 
-            <div className="relative h-1.5 mt-1 rounded-full bg-gray-100 overflow-hidden" aria-hidden>
-                <div className="absolute inset-y-0 left-0 bg-brand6/25" style={{ width: `${pct}%` }} />
-                <div
-                    className={`absolute inset-y-0 left-0 ${atCap ? 'bg-amber-500' : 'bg-brand'}`}
-                    style={{ width: `${usedPct}%` }}
-                />
-            </div>
-
-            <div className="mt-1 text-[10px] leading-tight">
+            <div className="mt-0.5 text-[10px] leading-tight">
                 {pct === 0 ? (
                     <span className="text-gray-400">Held — never sold</span>
                 ) : (
